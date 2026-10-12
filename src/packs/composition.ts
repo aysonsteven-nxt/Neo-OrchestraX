@@ -18,13 +18,16 @@ export interface PackCompositionResult extends PackGraphResolution {
 
 export function composePack(project: Project, packName: string, orchestraxRoot: string, workspaceRoot: string): PackCompositionResult | undefined {
   const builtIn = path.join(orchestraxRoot, "packs");
+  const workspaceInstalled = path.join(workspaceRoot, ".orchestrax", "packs");
   const installed = path.join(project.path, ".orchestrax", "packs");
   const packPath = fs.existsSync(path.join(installed, packName, "pack.json"))
     ? path.join(installed, packName)
-    : path.join(builtIn, packName);
+    : fs.existsSync(path.join(workspaceInstalled, packName, "pack.json"))
+      ? path.join(workspaceInstalled, packName)
+      : path.join(builtIn, packName);
   if (!fs.existsSync(packPath)) return undefined;
 
-  const graph = resolvePackGraph(packPath, [builtIn, installed]);
+  const graph = resolvePackGraph(packPath, [builtIn, workspaceInstalled, installed]);
   if (!graph) return undefined;
   const profile = analyzeProject(project);
   const capabilities = new Set(profile.signals.flatMap(s => [s.key.toLowerCase(), s.value.toLowerCase()]));

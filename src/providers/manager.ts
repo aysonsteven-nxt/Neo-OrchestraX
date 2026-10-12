@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { analyzeProject } from "../analyzer/project-analyzer.js";
 import { listInstalled } from "../packs/installer.js";
 import { listSyntra } from "../syntra/manager.js";
@@ -54,7 +55,8 @@ function writeArtifact(projectPath: string, artifact: ProviderArtifact): "writte
 export function syncProvider(project: { id: string; name: string; path: string }, providerId: string): ProviderSyncResult {
   const provider = getProvider(providerId);
   if (!provider) throw new Error(`Unknown provider: ${providerId}`);
-  const located = locateOrchestraX(project.path);
+  const installationRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+  const located = locateOrchestraX(project.path, installationRoot);
   const workspaceRoot = located.workspaceRoot;
   const orchestraxRoot = located.orchestraxRoot;
   const context = buildContext(project, workspaceRoot, orchestraxRoot);
@@ -77,7 +79,8 @@ export function listProviders() {
 export function projectProviderCommands(projectPath: string, providerId: string): ProviderCommandProjection[] {
   const provider = getProvider(providerId);
   if (!provider) throw new Error(`Unknown provider: ${providerId}`);
-  const orchestraxRoot = locateOrchestraX(projectPath).orchestraxRoot;
+  const installationRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+  const orchestraxRoot = locateOrchestraX(projectPath, installationRoot).orchestraxRoot;
   const commands = loadCommands(path.join(orchestraxRoot, "commands"));
   return provider.projectCommands(commands);
 }
@@ -88,7 +91,7 @@ function writeManifest(projectPath: string, commandsRoot: string): void {
   const commands = loadCommands(commandsRoot);
   fs.writeFileSync(path.join(dir, "manifest.json"), JSON.stringify({
     generatedBy: "neo-orchestrax",
-    version: "0.14.7",
+    version: "0.15.0",
     providers: providers.map(p => ({ id: p.id, capabilities: p.capabilities })),
     aiCommands: commands.map(command => ({ id: command.id, version: command.version, description: command.description, usage: command.usage })),
     updatedAt: new Date().toISOString()

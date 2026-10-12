@@ -1,6 +1,6 @@
 import type { Project } from "../index.js";
 import { analyzeProject } from "../analyzer/project-analyzer.js";
-import { searchSyntra, listSyntra } from "../syntra/manager.js";
+import { searchSyntra, listSyntra, searchWorkspaceSyntra, listWorkspaceSyntra } from "../syntra/manager.js";
 import type { SyntraEntry } from "../syntra/types.js";
 import type { ContextItem, ResolvedContext } from "./types.js";
 
@@ -24,9 +24,11 @@ function governanceWeight(entry: SyntraEntry): number {
   }
 }
 
-export function resolveContext(project: Project, query?: string): ResolvedContext {
+export function resolveContext(project: Project, query?: string, workspaceRoot?: string): ResolvedContext {
   const profile = analyzeProject(project);
-  const sourceEntries = query ? searchSyntra(project.path, query) : listSyntra(project.path);
+  const projectEntries = query ? searchSyntra(project.path, query) : listSyntra(project.path);
+  const workspaceEntries = workspaceRoot ? (query ? searchWorkspaceSyntra(workspaceRoot, query) : listWorkspaceSyntra(workspaceRoot)) : [];
+  const sourceEntries = [...workspaceEntries.map(entry => ({ ...entry, title: `[workspace] ${entry.title}` })), ...projectEntries];
 
   const items: ContextItem[] = [
     ...profile.signals.map(signal => ({

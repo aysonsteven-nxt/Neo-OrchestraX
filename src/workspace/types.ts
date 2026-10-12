@@ -7,6 +7,10 @@ export interface Project {
 export interface Workspace {
   root: string;
   orchestraxRoot: string;
+  installationRoot: string;
+  configPath?: string;
+  initialized: boolean;
+  scope: "workspace" | "project" | "legacy";
   projects: Project[];
   folderRoots?: string[];
   workspaceFile?: string;

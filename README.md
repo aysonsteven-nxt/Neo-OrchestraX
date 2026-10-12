@@ -1,34 +1,93 @@
-## V0.14.6
-
-V0.14.6 adds provider-specific AI command projection. The canonical `/command` definitions remain provider-neutral; the Copilot adapter generates an Agent Plugins 1.0 package under `providers/copilot/` with Copilot slash commands under `com.github.copilot/commands/`.
-
-## V0.14.3
-
-Explicit AI command targets can resolve existing workspace project directories even when automatic discovery does not classify them.
-
 # Neo OrchestraX
 
-**Version 0.14.6**
+**Version 0.15.0**
 
-Neo OrchestraX is a workspace-first, provider-neutral AI development orchestration layer.
+Neo OrchestraX is a local-first, provider-neutral AI development orchestration toolkit.
+
+V0.15 separates the **OrchestraX installation** from the **workspace** and makes workspace scope optional.
 
 ```text
-Project Intelligence + Packs + Rails + Agents + Skills + Syntra
-                              |
-                              v
-                        AI Commands
-                              |
-                              v
-                       Command Router
-                              |
-                              v
-                     Provider Adapters
-                       /   /   |   \\
-                      v   v    v    v
-                 Copilot Gemini Claude Cursor
+OrchestraX installation
+        |
+        +-- Packs
+        +-- Agents
+        +-- Skills
+        +-- Instructions / Rails
+        +-- AI Commands
+        +-- Provider adapters
+        |
+        v
+     Workspace (optional)
+        |
+        +-- projects/
+        +-- documentation/
+        +-- context/
+        +-- .orchestrax/
+        |
+        +-- Project A
+        |     +-- .orchestrax/
+        |
+        +-- Project B
+              +-- .orchestrax/
 ```
 
-## AI Commands — PRIMARY
+## Installation vs Workspace
+
+The OrchestraX installation is the toolkit/runtime. It does not need to live inside a workspace.
+
+A workspace is an optional scope for related projects, shared configuration, documentation, and cross-project context.
+
+A standalone project can use OrchestraX without a workspace.
+
+## Initialize a workspace
+
+```text
+neo workspace init D:\Work\MyProduct
+```
+
+Creates:
+
+```text
+MyProduct/
+├── projects/
+├── documentation/
+├── context/
+│   └── syntra/
+└── .orchestrax/
+    ├── workspace.json
+    └── packs/
+```
+
+## Initialize a standalone project
+
+```text
+neo project init D:\Work\MoneyMap
+```
+
+Creates:
+
+```text
+MoneyMap/
+└── .orchestrax/
+    ├── project.json
+    ├── packs/
+    └── syntra/
+```
+
+## Pack scopes
+
+Packs can be installed at workspace or project scope:
+
+```text
+neo pack install product-manager --workspace
+neo pack install android-kotlin-dev MoneyMap
+```
+
+The effective project environment is resolved from the OrchestraX installation, workspace scope, and project scope.
+
+## AI Commands — PRIMARY where supported
+
+Copilot already exposes OrchestraX commands through its provider plugin:
 
 ```text
 /package-selector
@@ -37,66 +96,37 @@ Project Intelligence + Packs + Rails + Agents + Skills + Syntra
 /task start "Transaction history" "Track transaction history" for MoneyMap
 /handoff for MoneyMap
 /resume for MoneyMap
-/instructions for MoneyMap
-/agents for MoneyMap
-/agent android-dev for MoneyMap
-/skills for MoneyMap
-/skill compose-development for MoneyMap
 ```
 
-The canonical AI Command definitions live in:
+AI Commands remain provider-neutral capabilities. OrchestraX does not require every AI client to expose the same slash-command registry.
+
+## CLI — UNIVERSAL control surface
+
+The CLI remains the provider-independent control surface:
 
 ```text
-neo-orchestrax/commands/*.command.md
-```
-
-The legacy `@command` syntax remains accepted for compatibility but `/command` is canonical.
-
-## CLI — SECONDARY
-
-```text
+neo workspace status
+neo project list
 neo pack list
-neo analyze MoneyMap
-neo provider list
-neo provider sync MoneyMap copilot
+neo pack install android-kotlin-dev MoneyMap
+neo pack install product-manager --workspace
+neo context MoneyMap
+neo task list MoneyMap
+neo handoff latest MoneyMap
 ```
 
-The CLI can exercise the AI command router for diagnostics:
+The CLI can also exercise the AI command engine diagnostically:
 
 ```text
 neo command "/package-selector for MoneyMap"
 ```
 
-## Provider-neutral core
+## Core separation
 
-The canonical OrchestraX definitions remain inside `neo-orchestrax`:
+- **OrchestraX** — tooling and orchestration capabilities.
+- **Workspace** — optional scope for multiple related projects and shared configuration.
+- **Projects** — the actual software repositories.
+- **Documentation** — human-facing product/technical documentation.
+- **Context / Syntra** — persistent knowledge and project/workspace intelligence.
 
-```text
-neo-orchestrax/
-├── agents/
-├── skills/
-├── instructions/
-├── commands/
-├── packs/
-├── syntra/
-└── providers/
-```
-
-Provider adapters determine how those canonical capabilities are exposed through a specific AI provider. The core does not depend on Copilot, Gemini, Claude Code, Cursor, or any other single provider.
-
-## V0.14.1
-
-This bug-fix release improves multi-root workspace discovery and invocation from inside the OrchestraX directory by honoring a detected VS Code `.code-workspace` configuration.
-
-
-V0.14 introduces:
-
-- first-class AI Commands
-- provider-neutral command definitions
-- slash-style canonical `/command` syntax
-- legacy `@command` compatibility parsing
-- dedicated AI command routing/execution
-- provider capability abstraction for AI command exposure
-- provider manifests containing the canonical command catalog
-
-Syntra remains the internal persistent project-intelligence layer, and Handoff remains current transferable work/session state.
+Syntra is not a user-facing command registry and is not a replacement for packs, agents, skills, or instructions.

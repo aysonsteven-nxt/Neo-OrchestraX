@@ -1,14 +1,15 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { executeAiCommand } from "./orchestration/ai-command-service.js";
 import { loadPackRegistry } from "./packs/registry.js";
 import { validatePack } from "./packs/validator.js";
-import { installPack, listInstalled, removePack } from "./packs/installer.js";
+import { installPack, installWorkspacePack, listInstalled, listWorkspaceInstalled, removePack, removeWorkspacePack } from "./packs/installer.js";
 import { composePack } from "./packs/composition.js";
 import { resolvePackGraph } from "./packs/resolver.js";
 import { analyzeProject } from "./analyzer/project-analyzer.js";
 import { selectPacks } from "./selector/pack-selector.js";
-import { createEntry, listSyntra, searchSyntra, changeSyntraStatus } from "./syntra/manager.js";
+import { createEntry, createWorkspaceEntry, listSyntra, listWorkspaceSyntra, searchSyntra, searchWorkspaceSyntra, changeSyntraStatus, changeWorkspaceSyntraStatus } from "./syntra/manager.js";
 import { initSyntra } from "./syntra/store.js";
 import { resolveContext } from "./context/resolver.js";
 import { formatContext } from "./context/formatter.js";
@@ -26,6 +27,7 @@ import { validateSkillDirectory } from "./skills/registry.js";
 
 import type { Project, Workspace } from "./workspace/types.js";
 import { isOrchestraXDirectory, isProjectDirectory, locateOrchestraX } from "./workspace/discovery.js";
+import { initWorkspace, initProject, workspaceConfigPath, projectConfigPath, readWorkspaceConfig } from "./workspace/config.js";
 export type { Project, Workspace } from "./workspace/types.js";
 
 interface DirectoryEntry {
@@ -35,11 +37,13 @@ interface DirectoryEntry {
 }
 
 
-export function discoverWorkspace(root: string): Workspace {
-  const located = locateOrchestraX(root);
+export function discoverWorkspace(root: string, installationRoot: string = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")): Workspace {
+  const located = locateOrchestraX(root, installationRoot);
   const resolved = located.workspaceRoot;
   const orchestraxRoot = located.orchestraxRoot;
-  const candidateRoots = located.folderRoots?.length ? located.folderRoots : [resolved];
+  const configured = readWorkspaceConfig(resolved);
+  const configuredProjectsRoot = configured ? path.join(resolved, configured.projectsDirectory) : undefined;
+  const candidateRoots = [...(located.folderRoots ?? []), ...(configuredProjectsRoot ? [configuredProjectsRoot] : []), resolved].filter((value, index, all) => all.indexOf(value) === index);
   const projects: Project[] = [];
   const seen = new Set<string>();
 
@@ -69,22 +73,28 @@ export function discoverWorkspace(root: string): Workspace {
     }
   }
 
-  return { root: resolved, orchestraxRoot, projects, folderRoots: located.folderRoots, workspaceFile: located.workspaceFile };
+  return { root: resolved, orchestraxRoot, installationRoot: located.installationRoot, configPath: located.configPath, initialized: located.initialized, scope: located.scope, projects, folderRoots: located.folderRoots, workspaceFile: located.workspaceFile };
 }
 
 function help(): void {
   console.log(`
-Neo OrchestraX v0.14.7
+Neo OrchestraX v0.15.0
 
 Workspace:
+  neo workspace init [path]
   neo workspace status
   neo project list
+  neo project init [path]
 
 Packs:
   neo pack list
   neo pack installed <project>
   neo pack install <pack> <project>
+  neo pack install <pack> --workspace
+  neo pack installed <project>
+  neo pack installed --workspace
   neo pack remove <pack> <project>
+  neo pack remove <pack> --workspace
   neo pack validate <pack>
   neo pack show <pack> [project]
   neo pack graph <pack> [project]
@@ -126,6 +136,9 @@ Skills:
   neo skill validate <path>
 
 Syntra diagnostics:
+  neo syntra workspace list
+  neo syntra workspace search "<query>"
+  neo syntra workspace add "<title>" "<content>" <category>
   neo syntra init <project>
   neo syntra list <project>
   neo syntra search <project> "<query>"
@@ -155,12 +168,30 @@ const args = process.argv.slice(2);
 const command = args[0];
 if (!command || command === "help" || command === "--help") { help(); process.exit(0); }
 
-const workspace = discoverWorkspace(process.cwd());
+const installationRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const workspace = discoverWorkspace(process.cwd(), installationRoot);
 const packRoot = path.join(workspace.orchestraxRoot, "packs");
+const workspacePackRoot = path.join(workspace.root, ".orchestrax", "packs");
+const availablePackRoots = [packRoot, workspacePackRoot].filter((value, index, all) => all.indexOf(value) === index);
 
-if (command === "status" || args.join(" ") === "workspace status") {
-  console.log("Neo OrchestraX v0.14.7");
+if (command === "workspace" && args[1] === "init") {
+  const target = path.resolve(args[2] ?? process.cwd());
+  if (fs.existsSync(workspaceConfigPath(target))) { console.error(`Workspace already initialized: ${target}`); process.exit(1); }
+  initWorkspace(target);
+  console.log(`Initialized Neo OrchestraX workspace: ${target}`);
+  console.log("Created: projects/, documentation/, context/syntra/, .orchestrax/");
+} else if (command === "project" && args[1] === "init") {
+  const target = path.resolve(args[2] ?? process.cwd());
+  if (fs.existsSync(projectConfigPath(target))) { console.error(`Project already initialized: ${target}`); process.exit(1); }
+  initProject(target);
+  console.log(`Initialized Neo OrchestraX project: ${target}`);
+  console.log("Created: .orchestrax/packs/, .orchestrax/syntra/");
+} else if (command === "status" || args.join(" ") === "workspace status") {
+  console.log("Neo OrchestraX v0.15.0");
   console.log(`Workspace: ${workspace.root}`);
+  console.log(`OrchestraX installation: ${workspace.installationRoot}`);
+  console.log(`Scope: ${workspace.scope}`);
+  console.log(`Workspace initialized: ${workspace.initialized}`);
   if (workspace.workspaceFile) console.log(`Workspace file: ${workspace.workspaceFile}`);
   if (workspace.folderRoots?.length) {
     console.log(`Workspace folders: ${workspace.folderRoots.length}`);
@@ -179,7 +210,7 @@ if (command === "status" || args.join(" ") === "workspace status") {
   }
 
   const query = args.slice(2).join(" ").trim() || undefined;
-  console.log(formatContext(resolveContext(project, query)));
+  console.log(formatContext(resolveContext(project, query, workspace.root)));
 } else if (command === "task") {
   const sub=args[1], project=workspace.projects.find(p=>p.name.toLowerCase()===(args[2]??"").toLowerCase());
   if(!project){console.error("Project not found.");process.exit(1);}
@@ -258,21 +289,29 @@ if (command === "status" || args.join(" ") === "workspace status") {
   if (sub === "list") {
     loadPackRegistry(packRoot).forEach(p => console.log(`${p.name}@${p.version}\t${p.description}`));
   } else if (sub === "installed") {
-    const project = workspace.projects.find(p => p.name.toLowerCase() === (args[2] ?? "").toLowerCase());
-    if (!project) { console.error("Project not found."); process.exit(1); }
-    listInstalled(project.path).forEach(n => console.log(n));
+    if (args[2] === "--workspace") {
+      if (workspace.scope !== "workspace") { console.error("Workspace scope is not available. Initialize a workspace with: neo workspace init [path]"); process.exit(1); }
+      listWorkspaceInstalled(workspace.root).forEach(n => console.log(`${n}\tworkspace`));
+    } else {
+      const project = workspace.projects.find(p => p.name.toLowerCase() === (args[2] ?? "").toLowerCase());
+      if (!project) { console.error("Project not found."); process.exit(1); }
+      listWorkspaceInstalled(workspace.root).forEach(n => console.log(`${n}\tworkspace`));
+      listInstalled(project.path).forEach(n => console.log(`${n}\tproject`));
+    }
   } else if (sub === "install" || sub === "remove") {
     const pack = args[2];
-    const project = workspace.projects.find(p => p.name.toLowerCase() === (args[3] ?? "").toLowerCase());
-    if (!pack || !project) { console.error(`Usage: neo pack ${sub} <pack> <project>`); process.exit(1); }
+    const workspaceScope = args[3] === "--workspace";
+    if (workspaceScope && workspace.scope !== "workspace") { console.error("Workspace scope is not available. Initialize a workspace with: neo workspace init [path]"); process.exit(1); }
+    const project = workspaceScope ? undefined : workspace.projects.find(p => p.name.toLowerCase() === (args[3] ?? "").toLowerCase());
+    if (!pack || (!workspaceScope && !project)) { console.error(`Usage: neo pack ${sub} <pack> <project> | neo pack ${sub} <pack> --workspace`); process.exit(1); }
     const result = sub === "install"
-      ? installPack(path.join(packRoot, pack), project.path, [packRoot])
-      : removePack(project.path, pack);
+      ? (workspaceScope ? installWorkspacePack(path.join(packRoot, pack), workspace.root, availablePackRoots) : installPack(path.join(packRoot, pack), project!.path, availablePackRoots))
+      : (workspaceScope ? removeWorkspacePack(workspace.root, pack) : removePack(project!.path, pack));
     console.log(result.message);
     process.exit(result.ok ? 0 : 1);
   } else if (sub === "validate") {
     const target = path.join(packRoot, args[2] ?? "");
-    const result = validatePack(target, [packRoot]);
+    const result = validatePack(target, availablePackRoots);
     console.log(result.valid ? `Valid: ${args[2]}` : `Invalid: ${result.errors.join("; ")}`);
     result.warnings.forEach(w => console.log(`! ${w}`));
     process.exit(result.valid ? 0 : 1);
@@ -284,7 +323,7 @@ if (command === "status" || args.join(" ") === "workspace status") {
     const target = project && fs.existsSync(path.join(project.path, ".orchestrax", "packs", packName))
       ? path.join(project.path, ".orchestrax", "packs", packName)
       : path.join(packRoot, packName);
-    const graph = resolvePackGraph(target, [packRoot, ...(project ? [path.join(project.path, ".orchestrax", "packs")] : [])]);
+    const graph = resolvePackGraph(target, availablePackRoots.concat(project ? [path.join(project.path, ".orchestrax", "packs")] : []));
     if (!graph) { console.error(`Pack not found or invalid: ${packName}`); process.exit(1); }
     if (sub === "show") {
       const p = graph.root.pack;
@@ -367,8 +406,17 @@ if (command === "status" || args.join(" ") === "workspace status") {
   else {console.error("Unknown skill command.");process.exit(1);}
 } else if (command === "syntra") {
   const sub = args[1];
-  const project = workspace.projects.find(p => p.name.toLowerCase() === (args[2] ?? "").toLowerCase());
-  if (!project) { console.error("Project not found."); process.exit(1); }
+  if (sub === "workspace") {
+    if (workspace.scope !== "workspace") { console.error("Workspace scope is not available. Initialize a workspace first."); process.exit(1); }
+    const action = args[2];
+    if (action === "list") listWorkspaceSyntra(workspace.root).forEach(e => console.log(`${e.id} | ${e.status} | ${e.category} | ${e.title}`));
+    else if (action === "search") searchWorkspaceSyntra(workspace.root, args.slice(3).join(" ")).forEach(e => console.log(`${e.id} | ${e.status} | ${e.category} | ${e.title}\n  ${e.content}`));
+    else if (action === "add") { const title=args[3], content=args[4], category=args[5] as any; if(!title||!content||!category){console.error('Usage: neo syntra workspace add "<title>" "<content>" <category>');process.exit(1);} console.log(`Created workspace Syntra entry ${createWorkspaceEntry(workspace.root,{title,content,category}).id}`); }
+    else if (action === "status") { const entry=changeWorkspaceSyntraStatus(workspace.root,args[3],args[4] as any); if(!entry){console.error("Workspace Syntra entry not found.");process.exit(1);} console.log(`Updated ${entry.id} → ${entry.status}`); }
+    else { console.error("Unknown workspace Syntra command."); process.exit(1); }
+  } else {
+    const project = workspace.projects.find(p => p.name.toLowerCase() === (args[2] ?? "").toLowerCase());
+    if (!project) { console.error("Project not found."); process.exit(1); }
 
   if (sub === "init") {
     initSyntra(project.path);
@@ -392,6 +440,7 @@ if (command === "status" || args.join(" ") === "workspace status") {
     if (!entry) { console.error("Syntra entry not found."); process.exit(1); }
     console.log(`Updated ${entry.id} → ${entry.status}`);
   } else { console.error("Unknown Syntra command."); process.exit(1); }
+  }
 } else if (command === "command") {
   // Secondary diagnostic bridge for exercising the PRIMARY AI command router from a terminal.
   // The command language itself is not a CLI language.
