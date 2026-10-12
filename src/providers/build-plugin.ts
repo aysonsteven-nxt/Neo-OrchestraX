@@ -11,7 +11,7 @@ if (!provider) throw new Error("Copilot provider adapter is not registered.");
 
 const commands = loadCommands(commandsRoot);
 const artifacts = provider.generateCommandArtifacts(commands);
-const pluginRoot = path.join(root, "providers", "copilot", "plugin");
+const pluginRoot = path.join(root, "providers", "copilot");
 
 fs.rmSync(pluginRoot, { recursive: true, force: true });
 fs.mkdirSync(pluginRoot, { recursive: true });
@@ -20,7 +20,7 @@ const manifest = {
   $schema: "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   name: "neo-orchestrax",
   description: "Neo OrchestraX provider projection for GitHub Copilot.",
-  version: "0.14.5",
+  version: "0.14.6",
   author: { name: "NeoQuantum Software Labs" },
   keywords: ["neo-orchestrax", "orchestration", "ai-development"]
 };

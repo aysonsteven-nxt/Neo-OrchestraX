@@ -1,6 +1,6 @@
-## V0.14.5
+## V0.14.6
 
-V0.14.5 adds provider-specific AI command projection. The canonical `/command` definitions remain provider-neutral; the Copilot adapter generates an Agent Plugins 1.0 package under `providers/copilot/plugin/` with Copilot slash commands under `com.github.copilot/commands/`.
+V0.14.6 adds provider-specific AI command projection. The canonical `/command` definitions remain provider-neutral; the Copilot adapter generates an Agent Plugins 1.0 package under `providers/copilot/` with Copilot slash commands under `com.github.copilot/commands/`.
 
 ## V0.14.3
 
@@ -8,7 +8,7 @@ Explicit AI command targets can resolve existing workspace project directories e
 
 # Neo OrchestraX
 
-**Version 0.14.5**
+**Version 0.14.6**
 
 Neo OrchestraX is a workspace-first, provider-neutral AI development orchestration layer.
 

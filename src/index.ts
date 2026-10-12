@@ -74,7 +74,7 @@ export function discoverWorkspace(root: string): Workspace {
 
 function help(): void {
   console.log(`
-Neo OrchestraX v0.14.5
+Neo OrchestraX v0.14.6
 
 Workspace:
   neo workspace status
@@ -159,7 +159,7 @@ const workspace = discoverWorkspace(process.cwd());
 const packRoot = path.join(workspace.orchestraxRoot, "packs");
 
 if (command === "status" || args.join(" ") === "workspace status") {
-  console.log("Neo OrchestraX v0.14.5");
+  console.log("Neo OrchestraX v0.14.6");
   console.log(`Workspace: ${workspace.root}`);
   if (workspace.workspaceFile) console.log(`Workspace file: ${workspace.workspaceFile}`);
   if (workspace.folderRoots?.length) {
