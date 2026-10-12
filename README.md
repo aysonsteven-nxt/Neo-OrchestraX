@@ -1,58 +1,57 @@
 # Neo OrchestraX
 
-**Version 0.2.0**
+**Version 0.3.0**
 
 Neo OrchestraX is an AI development orchestration platform designed around a workspace containing the orchestration system and one or more projects.
 
-## V0.2.0 — Command Engine
+## V0.3.0 — Pack System
 
-V0.2 establishes the first real OrchestraX interaction layer:
+V0.3 establishes the canonical Pack model and project-local pack lifecycle.
 
-- command parsing
-- command routing
-- explicit project targeting
-- single-project resolution
-- multi-project ambiguity handling
-- supported command catalog
+Built-in packs:
 
-Supported commands:
+- `project-manager`
+- `solutions-architect`
+- `android-kotlin-dev`
+- `java-dev`
+
+Pack operations:
+
+```text
+neo pack list
+neo pack validate android-kotlin-dev
+neo pack install android-kotlin-dev MoneyMap
+neo pack installed MoneyMap
+neo pack remove android-kotlin-dev MoneyMap
+```
+
+The AI-facing command model includes:
 
 ```text
 @package-selector
-@package-install <package>
-@context
-@task
-@handoff
-@resume
+@package-install android-kotlin-dev
+@package-list
+@package-installed
+@package-remove android-kotlin-dev
+@package-validate android-kotlin-dev
 ```
 
-Project targeting:
+For multiple projects:
 
 ```text
-@package-selector for MoneyMap
 @package-install android-kotlin-dev for MoneyMap
 ```
 
-Target resolution:
-
-1. Explicit `for <project>` target
-2. Single project in workspace
-3. Ambiguous multi-project workspace → ask for a target
-4. No project → report no project
-
 ## Syntra
 
-Syntra remains an internal subsystem. It is not a user-facing command namespace.
+Syntra remains internal to OrchestraX. It is not a command namespace.
 
-## CLI
+## Project state
 
-The CLI is still secondary and is used here for command diagnostics:
+Installed packs are stored under:
 
 ```text
-neo command "@package-selector"
-neo command "@package-install android-kotlin-dev for MoneyMap"
+<project>/.orchestrax/packs/
 ```
 
-## Existing prototype
-
-The old `neo-devkit` repository is not part of this project and should remain untouched.
+The existing `neo-devkit` prototype remains untouched.

@@ -1,0 +1,19 @@
+{
+  "name": "solutions-architect",
+  "version": "0.1.0",
+  "description": "System, component, API, data, integration, security, deployment and architecture design.",
+  "capabilities": [
+    "system-architecture",
+    "api-design",
+    "data-architecture",
+    "integration",
+    "security-architecture"
+  ],
+  "agents": [
+    "solutions-architect"
+  ],
+  "skills": [
+    "architecture-design",
+    "adr"
+  ]
+}

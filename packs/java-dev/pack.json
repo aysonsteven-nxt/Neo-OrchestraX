@@ -1,0 +1,17 @@
+{
+  "name": "java-dev",
+  "version": "0.1.0",
+  "description": "Java development, APIs, testing and maintainability.",
+  "capabilities": [
+    "java",
+    "api-development",
+    "java-testing"
+  ],
+  "agents": [
+    "java-developer"
+  ],
+  "skills": [
+    "java-development",
+    "api-development"
+  ]
+}

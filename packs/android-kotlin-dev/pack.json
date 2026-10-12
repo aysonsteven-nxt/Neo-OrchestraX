@@ -1,0 +1,19 @@
+{
+  "name": "android-kotlin-dev",
+  "version": "0.1.0",
+  "description": "Android and Kotlin development with Jetpack, Compose, architecture and testing.",
+  "capabilities": [
+    "android",
+    "kotlin",
+    "jetpack-compose",
+    "android-testing"
+  ],
+  "agents": [
+    "android-kotlin-developer"
+  ],
+  "skills": [
+    "android-development",
+    "kotlin-development",
+    "compose-development"
+  ]
+}

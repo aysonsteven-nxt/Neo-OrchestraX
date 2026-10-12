@@ -13,6 +13,10 @@ export interface CommandResult {
 const supported = new Set([
   "package-selector",
   "package-install",
+  "package-list",
+  "package-installed",
+  "package-remove",
+  "package-validate",
   "context",
   "task",
   "handoff",
