@@ -1,10 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { validatePack } from "./validator.js";
+import { resolvePackGraph } from "./resolver.js";
 
 export interface InstallResult {
   ok: boolean;
   message: string;
+  installed?: string[];
 }
 
 export function installedPacksPath(projectPath: string): string {
@@ -13,22 +15,34 @@ export function installedPacksPath(projectPath: string): string {
 
 export function installPack(
   sourcePackPath: string,
-  projectPath: string
+  projectPath: string,
+  availablePackRoots: string[] = []
 ): InstallResult {
-  const validation = validatePack(sourcePackPath);
+  const validation = validatePack(sourcePackPath, availablePackRoots);
   if (!validation.valid || !validation.metadata) {
     return { ok: false, message: `Pack validation failed: ${validation.errors.join("; ")}` };
   }
 
-  const destinationRoot = installedPacksPath(projectPath);
-  const destination = path.join(destinationRoot, validation.metadata.name);
+  const graph = resolvePackGraph(sourcePackPath, [...availablePackRoots, installedPacksPath(projectPath)]);
+  if (!graph || graph.issues.some(i => i.required)) {
+    const issues = graph?.issues.filter(i => i.required).map(i => i.message) ?? ["Unable to resolve pack dependency graph"];
+    return { ok: false, message: `Pack dependency resolution failed: ${issues.join("; ")}` };
+  }
 
+  const destinationRoot = installedPacksPath(projectPath);
   fs.mkdirSync(destinationRoot, { recursive: true });
-  fs.cpSync(sourcePackPath, destination, { recursive: true, force: true });
+  const installed: string[] = [];
+
+  for (const node of graph.order) {
+    const destination = path.join(destinationRoot, node.pack.name);
+    fs.cpSync(node.sourcePath, destination, { recursive: true, force: true });
+    installed.push(`${node.pack.name}@${node.pack.version}`);
+  }
 
   return {
     ok: true,
-    message: `Installed ${validation.metadata.name}@${validation.metadata.version} for ${path.basename(projectPath)}`
+    message: `Installed ${validation.metadata.name}@${validation.metadata.version} for ${path.basename(projectPath)}${installed.length > 1 ? ` with ${installed.length - 1} dependency pack(s)` : ""}`,
+    installed
   };
 }
 

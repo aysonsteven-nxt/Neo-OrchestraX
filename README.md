@@ -1,6 +1,6 @@
 # Neo OrchestraX
 
-**Version 0.12.0**
+**Version 0.13.0**
 
 V0.9 establishes provider adapters and provider-specific project artifacts while keeping OrchestraX canonical context provider-neutral.
 
@@ -80,4 +80,18 @@ AI-facing commands:
 @skills
 @skills for MoneyMap
 @skill compose-development for MoneyMap
+```
+
+
+## V0.13 Pack Composition
+
+Packs are now composable dependency graphs. A pack can declare instructions, agents, skills, other pack dependencies and compatibility requirements. OrchestraX resolves versions, detects missing or circular dependencies, and validates a pack against the selected project's effective resources.
+
+CLI diagnostics:
+
+```text
+neo pack show android-kotlin-dev
+neo pack graph android-kotlin-dev
+neo pack validate android-kotlin-dev
+neo pack compose android-kotlin-dev MoneyMap
 ```

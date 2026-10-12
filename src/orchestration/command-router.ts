@@ -26,7 +26,8 @@ const supported = new Set([
   "agents",
   "agent",
   "skills",
-  "skill"
+  "skill",
+  "pack"
 ]);
 
 export function routeCommand(input: string, projects: Project[]): CommandResult {

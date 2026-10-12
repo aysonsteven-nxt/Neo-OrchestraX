@@ -1,6 +1,6 @@
 {
   "name": "project-manager",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Requirements, scope, business rules, acceptance criteria, assumptions, constraints and project status.",
   "capabilities": [
     "requirements",
@@ -8,11 +8,15 @@
     "acceptance-criteria",
     "project-status"
   ],
-  "agents": [
-    "project-manager"
+  "agents": [],
+  "skills": [],
+  "instructions": [
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": true
+    }
   ],
-  "skills": [
-    "requirements-analysis",
-    "project-planning"
-  ]
+  "dependencies": [],
+  "compatibility": {}
 }

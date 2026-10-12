@@ -1,6 +1,6 @@
 {
   "name": "solutions-architect",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "System, component, API, data, integration, security, deployment and architecture design.",
   "capabilities": [
     "system-architecture",
@@ -9,11 +9,26 @@
     "integration",
     "security-architecture"
   ],
-  "agents": [
-    "solutions-architect"
+  "agents": [],
+  "skills": [],
+  "instructions": [
+    {
+      "id": "common/coding-standards",
+      "version": "^1.0.0",
+      "required": true
+    },
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": true
+    }
   ],
-  "skills": [
-    "architecture-design",
-    "adr"
-  ]
+  "dependencies": [
+    {
+      "id": "project-manager",
+      "version": "^0.2.0",
+      "required": true
+    }
+  ],
+  "compatibility": {}
 }

@@ -76,7 +76,7 @@ function writeManifest(projectPath: string): void {
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, "manifest.json"), JSON.stringify({
     generatedBy: "neo-orchestrax",
-    version: "0.12.0",
+    version: "0.13.0",
     providers: providers.map(p => p.id),
     updatedAt: new Date().toISOString()
   }, null, 2) + "\n", "utf8");

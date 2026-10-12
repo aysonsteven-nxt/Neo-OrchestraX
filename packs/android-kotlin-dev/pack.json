@@ -1,6 +1,6 @@
 {
   "name": "android-kotlin-dev",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Android and Kotlin development with Jetpack, Compose, architecture and testing.",
   "capabilities": [
     "android",
@@ -9,11 +9,51 @@
     "android-testing"
   ],
   "agents": [
-    "android-kotlin-developer"
+    {
+      "id": "android-dev",
+      "version": "^1.0.0",
+      "required": true
+    }
   ],
   "skills": [
-    "android-development",
-    "kotlin-development",
-    "compose-development"
-  ]
+    {
+      "id": "android-development",
+      "version": "^1.0.0",
+      "required": true
+    },
+    {
+      "id": "compose-development",
+      "version": "^1.0.0",
+      "required": true
+    },
+    {
+      "id": "android-testing",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "instructions": [
+    {
+      "id": "common/coding-standards",
+      "version": "^1.0.0",
+      "required": true
+    },
+    {
+      "id": "common/testing",
+      "version": "^1.0.0",
+      "required": true
+    },
+    {
+      "id": "android/kotlin-standards",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "dependencies": [],
+  "compatibility": {
+    "signals": [
+      "android",
+      "kotlin"
+    ]
+  }
 }

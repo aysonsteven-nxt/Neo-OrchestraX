@@ -4,6 +4,8 @@ import { routeCommand } from "./orchestration/command-router.js";
 import { loadPackRegistry } from "./packs/registry.js";
 import { validatePack } from "./packs/validator.js";
 import { installPack, listInstalled, removePack } from "./packs/installer.js";
+import { composePack } from "./packs/composition.js";
+import { resolvePackGraph } from "./packs/resolver.js";
 import { analyzeProject } from "./analyzer/project-analyzer.js";
 import { selectPacks } from "./selector/pack-selector.js";
 import { createEntry, listSyntra, searchSyntra, changeSyntraStatus } from "./syntra/manager.js";
@@ -50,7 +52,7 @@ export function discoverWorkspace(root: string): Workspace {
 
 function help(): void {
   console.log(`
-Neo OrchestraX v0.12.0
+Neo OrchestraX v0.13.0
 
 Workspace:
   neo workspace status
@@ -62,6 +64,9 @@ Packs:
   neo pack install <pack> <project>
   neo pack remove <pack> <project>
   neo pack validate <pack>
+  neo pack show <pack> [project]
+  neo pack graph <pack> [project]
+  neo pack compose <pack> <project>
   neo analyze <project>
   neo pack recommend <project>
   neo context <project> [query]
@@ -131,7 +136,7 @@ const workspace = discoverWorkspace(process.cwd());
 const packRoot = path.join(workspace.root, "neo-orchestrax", "packs");
 
 if (command === "status" || args.join(" ") === "workspace status") {
-  console.log("Neo OrchestraX v0.12.0");
+  console.log("Neo OrchestraX v0.13.0");
   console.log(`Workspace: ${workspace.root}`);
   console.log(`Projects: ${workspace.projects.length}`);
   workspace.projects.forEach(p => console.log(`  - ${p.name} (${p.id})`));
@@ -230,14 +235,52 @@ if (command === "status" || args.join(" ") === "workspace status") {
     const project = workspace.projects.find(p => p.name.toLowerCase() === (args[3] ?? "").toLowerCase());
     if (!pack || !project) { console.error(`Usage: neo pack ${sub} <pack> <project>`); process.exit(1); }
     const result = sub === "install"
-      ? installPack(path.join(packRoot, pack), project.path)
+      ? installPack(path.join(packRoot, pack), project.path, [packRoot])
       : removePack(project.path, pack);
     console.log(result.message);
     process.exit(result.ok ? 0 : 1);
   } else if (sub === "validate") {
-    const result = validatePack(path.join(packRoot, args[2] ?? ""));
+    const target = path.join(packRoot, args[2] ?? "");
+    const result = validatePack(target, [packRoot]);
     console.log(result.valid ? `Valid: ${args[2]}` : `Invalid: ${result.errors.join("; ")}`);
+    result.warnings.forEach(w => console.log(`! ${w}`));
     process.exit(result.valid ? 0 : 1);
+  } else if (sub === "show" || sub === "graph") {
+    const packName = args[2];
+    if (!packName) { console.error(`Usage: neo pack ${sub} <pack> [project]`); process.exit(1); }
+    const project = args[3] ? workspace.projects.find(p => p.name.toLowerCase() === args[3].toLowerCase()) : undefined;
+    if (args[3] && !project) { console.error("Project not found."); process.exit(1); }
+    const target = project && fs.existsSync(path.join(project.path, ".orchestrax", "packs", packName))
+      ? path.join(project.path, ".orchestrax", "packs", packName)
+      : path.join(packRoot, packName);
+    const graph = resolvePackGraph(target, [packRoot, ...(project ? [path.join(project.path, ".orchestrax", "packs")] : [])]);
+    if (!graph) { console.error(`Pack not found or invalid: ${packName}`); process.exit(1); }
+    if (sub === "show") {
+      const p = graph.root.pack;
+      console.log(`# ${p.name}`);
+      console.log(`Version: ${p.version}`);
+      console.log(`Description: ${p.description}`);
+      console.log(`Capabilities: ${p.capabilities.join(", ") || "none"}`);
+      console.log("\nInstructions:"); p.instructions.forEach(d => console.log(`- ${d.id} @ ${d.version} | ${d.required ? "required" : "optional"}`));
+      console.log("Agents:"); p.agents.forEach(d => console.log(`- ${d.id} @ ${d.version} | ${d.required ? "required" : "optional"}`));
+      console.log("Skills:"); p.skills.forEach(d => console.log(`- ${d.id} @ ${d.version} | ${d.required ? "required" : "optional"}`));
+      console.log("Pack dependencies:"); p.dependencies.forEach(d => console.log(`- ${d.id} @ ${d.version} | ${d.required ? "required" : "optional"}`));
+    } else {
+      console.log(`Pack Dependency Graph: ${packName}`);
+      graph.order.forEach((node, index) => console.log(`${index + 1}. ${node.pack.name}@${node.pack.version}`));
+      graph.issues.forEach(i => console.log(`${i.required ? "!" : "~"} ${i.message}`));
+    }
+  } else if (sub === "compose") {
+    const packName = args[2]; const project = workspace.projects.find(p => p.name.toLowerCase() === (args[3] ?? "").toLowerCase());
+    if (!packName || !project) { console.error("Usage: neo pack compose <pack> <project>"); process.exit(1); }
+    const composition = composePack(project, packName, path.join(workspace.root, "neo-orchestrax"), workspace.root);
+    if (!composition) { console.error(`Pack not found or invalid: ${packName}`); process.exit(1); }
+    console.log(`Pack Composition: ${packName} → ${project.name}`);
+    console.log("\nResolved packs:"); composition.order.forEach(p => console.log(`- ${p.pack.name}@${p.pack.version}`));
+    console.log(`\nCompatibility: ${composition.compatibility.length ? "failed" : "ok"}`);
+    composition.compatibility.forEach(e => console.log(`! ${e}`));
+    composition.issues.forEach(i => console.log(`${i.required ? "!" : "~"} ${i.message}`));
+    process.exit(composition.issues.some(i => i.required) || composition.compatibility.length > 0 ? 1 : 0);
   } else { console.error("Unknown pack command."); process.exit(1); }
 } else if (command === "instruction") {
   const sub = args[1];
@@ -383,6 +426,33 @@ if (command === "status" || args.join(" ") === "workspace status") {
       console.log(`Effective OrchestraX Skills: ${project.name}${agentId ? ` [${agentId}]` : ""}`);
       resolution.skills.forEach(sk => console.log(`- ${sk.id}@${sk.version} [${sk.source}] — ${sk.description}`));
       if (resolution.conflicts.length) resolution.conflicts.forEach(c => console.log(`! ${c}`));
+    }
+  } else if (result.command.name === "pack") {
+    const first = result.command.args[0];
+    const second = result.command.args[1];
+    const isCompose = first === "compose";
+    const packName = isCompose ? second : first;
+    if (!packName) { console.error("Usage: @pack <pack> for <project> or @pack compose <pack> for <project>"); process.exit(1); }
+    if (isCompose || second === "compose") {
+      const composition = composePack(project, packName, path.join(workspace.root, "neo-orchestrax"), workspace.root);
+      if (!composition) { console.error(`Pack not found or invalid: ${packName}`); process.exit(1); }
+      console.log(`Pack Composition: ${packName} → ${project.name}`);
+      composition.order.forEach(p => console.log(`- ${p.pack.name}@${p.pack.version}`));
+      composition.compatibility.forEach(e => console.log(`! ${e}`));
+      composition.issues.forEach(i => console.log(`${i.required ? "!" : "~"} ${i.message}`));
+      if (composition.issues.some(i => i.required) || composition.compatibility.length) process.exit(1);
+    } else {
+      const target = path.join(workspace.root, "neo-orchestrax", "packs", packName);
+      const graph = resolvePackGraph(target, [path.join(workspace.root, "neo-orchestrax", "packs")]);
+      if (!graph) { console.error(`Pack not found or invalid: ${packName}`); process.exit(1); }
+      console.log(`# ${graph.root.pack.name}`);
+      console.log(`Version: ${graph.root.pack.version}`);
+      console.log(`Description: ${graph.root.pack.description}`);
+      console.log("Pack dependencies:");
+      graph.root.pack.dependencies.forEach(d => console.log(`- ${d.id} @ ${d.version} | ${d.required ? "required" : "optional"}`));
+      console.log("Resolved graph:");
+      graph.order.forEach(p => console.log(`- ${p.pack.name}@${p.pack.version}`));
+      graph.issues.forEach(i => console.log(`${i.required ? "!" : "~"} ${i.message}`));
     }
   } else if (result.command.name === "provider-sync") {
     const provider = result.command.args[0];
