@@ -9,17 +9,6 @@ export const NEO_PROJECT_BOARD_APP = "neo-project-board";
 export const NEO_PROJECT_BOARD_CONTRACT = "neo-orchestrax/project-board@1";
 export const NEO_PROJECT_BOARD_MIN_VERSION = "0.4.0";
 
-export function installProjectBoardDependencies(boardRoot: string): { ok: boolean; message: string } {
-  const packageJson = path.join(boardRoot, "package.json");
-  if (!fs.existsSync(packageJson)) return { ok: false, message: "Neo Project Board package.json is missing." };
-  const result = process.platform === "win32"
-    ? spawnSync(process.env.ComSpec || "cmd.exe", ["/d", "/s", "/c", "npm install"], { cwd: boardRoot, stdio: "inherit" })
-    : spawnSync("npm", ["install"], { cwd: boardRoot, stdio: "inherit" });
-  if (result.error) return { ok: false, message: `Failed to run npm install for Neo Project Board: ${result.error.message}` };
-  if (result.status !== 0) return { ok: false, message: `npm install for Neo Project Board failed with exit code ${result.status}.` };
-  return { ok: true, message: "Neo Project Board dependencies installed." };
-}
-
 export interface ProjectBoardManifest {
   schema?: string;
   app?: string;
@@ -94,11 +83,7 @@ export function installProjectBoard(workspaceRoot: string, project: Pick<Project
   }
 
   const existing = validateProjectBoard(workspaceRoot, project);
-  if (existing.installed) {
-    if (!existing.valid) return existing;
-    const deps = installProjectBoardDependencies(existing.path);
-    return deps.ok ? { ...existing, message: `${existing.message} Dependencies installed.` } : { ...existing, valid: false, message: deps.message };
-  }
+  if (existing.installed) return existing;
 
   fs.mkdirSync(path.dirname(target), { recursive: true });
   const result = git(["clone", "--origin", "origin", NEO_PROJECT_BOARD_REPOSITORY, target]);
@@ -110,9 +95,7 @@ export function installProjectBoard(workspaceRoot: string, project: Pick<Project
   if (!installed.valid) {
     return { ...installed, message: `Neo Project Board was cloned, but validation failed: ${installed.message}` };
   }
-  const deps = installProjectBoardDependencies(target);
-  if (!deps.ok) return { ...installed, valid: false, message: deps.message };
-  return { ...installed, message: `Installed Neo Project Board ${installed.version} at ${target}; npm install completed.` };
+  return { ...installed, message: `Installed Neo Project Board ${installed.version} at ${target}.` };
 }
 
 export function updateProjectBoard(workspaceRoot: string, project: Pick<Project, "path" | "id">): ProjectBoardStatus {
@@ -127,9 +110,8 @@ export function updateProjectBoard(workspaceRoot: string, project: Pick<Project,
 export function launchProjectBoard(workspaceRoot: string, project: Pick<Project, "path" | "id">): { ok: boolean; message: string } {
   const status = validateProjectBoard(workspaceRoot, project);
   if (!status.valid) return { ok: false, message: status.message };
-  const result = process.platform === "win32"
-    ? spawnSync(process.env.ComSpec || "cmd.exe", ["/d", "/s", "/c", "npm run dev"], { cwd: status.path, stdio: "inherit" })
-    : spawnSync("npm", ["run", "dev"], { cwd: status.path, stdio: "inherit" });
+  const npm = process.platform === "win32" ? "npm.cmd" : "npm";
+  const result = spawnSync(npm, ["run", "dev"], { cwd: status.path, stdio: "inherit", windowsHide: false });
   if (result.error) return { ok: false, message: `Failed to launch Neo Project Board: ${result.error.message}` };
   return { ok: result.status === 0, message: result.status === 0 ? "Neo Project Board stopped." : `Neo Project Board exited with code ${result.status}.` };
 }

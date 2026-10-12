@@ -31,6 +31,7 @@ import { isOrchestraXDirectory, isProjectDirectory, locateOrchestraX } from "./w
 import { initWorkspace, initProject, workspaceConfigPath, projectConfigPath, readWorkspaceConfig } from "./workspace/config.js";
 import { ensureProjectHub, listHubInstalled, projectHubPath } from "./project-hub/manager.js";
 import { installProjectBoard, launchProjectBoard, updateProjectBoard, validateProjectBoard, getProjectBoardPath } from "./project-board.js";
+import { setProjectContextOrchestraxRoot, buildProjectAiContext, resolveProjectStoryContext, addStoryComment } from "./project-context.js";
 export type { Project, Workspace } from "./workspace/types.js";
 
 const installationRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -122,6 +123,9 @@ Packs:
   neo analyze <project>
   neo pack recommend <project>
   neo context <project> [query]
+  neo project context <project>
+  neo story context <project> <story-id>
+  neo story comment <project> <story-id> <author> "<comment>"
   neo task start <project> "<title>" "<objective>"
   neo task list <project>
   neo task show <project> <task-id>
@@ -214,6 +218,7 @@ if (!command || command === "help" || command === "--help" || command === "-h") 
 
 const workspace = discoverWorkspace(process.cwd(), installationRoot);
 const packRoot = path.join(workspace.orchestraxRoot, "packs");
+setProjectContextOrchestraxRoot(workspace.orchestraxRoot);
 const workspacePackRoot = path.join(workspace.root, ".orchestrax", "packs");
 const availablePackRoots = [packRoot, workspacePackRoot].filter((value, index, all) => all.indexOf(value) === index);
 
@@ -293,6 +298,28 @@ if (command === "board") {
   workspace.projects.forEach(p => console.log(`  - ${p.name} (${p.id})`));
 } else if (args.join(" ") === "project list") {
   workspace.projects.forEach(p => console.log(`${p.id}\t${p.path}`));
+} else if (command === "project" && args[1] === "context") {
+  const project = workspace.projects.find(p => p.name.toLowerCase() === (args[2] ?? "").toLowerCase());
+  if (!project) { console.error("Project not found."); process.exit(1); }
+  console.log(JSON.stringify(buildProjectAiContext(workspace.root, project), null, 2));
+} else if (command === "story") {
+  const action = args[1];
+  const project = workspace.projects.find(p => p.name.toLowerCase() === (args[2] ?? "").toLowerCase());
+  if (!project) { console.error("Project not found."); process.exit(1); }
+  const storyId = args[3];
+  if (!storyId) { console.error("Usage: neo story context|comment <project> <story-id> ..."); process.exit(1); }
+  if (action === "context") {
+    const context = resolveProjectStoryContext(workspace.root, project, storyId);
+    if (!context) { console.error("User Story not found."); process.exit(1); }
+    console.log(JSON.stringify(context, null, 2));
+  } else if (action === "comment") {
+    const author = args[4];
+    const content = args.slice(5).join(" ").trim();
+    if (!author || !content) { console.error('Usage: neo story comment <project> <story-id> <author> "<comment>"'); process.exit(1); }
+    const comment = addStoryComment(workspace.root, project, storyId, author, content);
+    if (!comment) { console.error("User Story not found."); process.exit(1); }
+    console.log(`Added comment ${comment.id} to ${storyId}.`);
+  } else { console.error("Unknown story command."); process.exit(1); }
 } else if (command === "context") {
   const projectName = args[1];
   const project = workspace.projects.find(p => p.name.toLowerCase() === (projectName ?? "").toLowerCase());

@@ -135,3 +135,7 @@ Syntra is not a user-facing command registry and is not a replacement for packs,
 ## V0.17.0
 
 V0.17 provisions the separate Neo Project Board repository inside `<project>-docs/neo-project-board` when the Project Manager pack is installed.
+
+## V0.18.0 — AI/Agent Project Collaboration
+
+V0.18.0 makes Project Hub data consumable by AI/Agents without introducing a second data store. Use `neo project context <project>` for a complete structured project context, `neo story context <project> <story-id>` for focused ticket context, and `neo story comment <project> <story-id> <author> "<comment>"` to persist agent/human contributions directly in the User Story JSON.
