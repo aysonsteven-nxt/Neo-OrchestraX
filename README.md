@@ -1,57 +1,51 @@
 # Neo OrchestraX
 
-**Version 0.3.0**
+**Version 0.4.0**
 
 Neo OrchestraX is an AI development orchestration platform designed around a workspace containing the orchestration system and one or more projects.
 
-## V0.3.0 — Pack System
+## V0.4.0 — Intelligent Pack Selector
 
-V0.3 establishes the canonical Pack model and project-local pack lifecycle.
+V0.4 introduces:
 
-Built-in packs:
+- deterministic project analysis
+- Project Profile
+- technology/framework/dependency signals
+- Pack capability matching
+- Pack recommendations
+- relevance scores with evidence
 
-- `project-manager`
-- `solutions-architect`
-- `android-kotlin-dev`
-- `java-dev`
-
-Pack operations:
+CLI:
 
 ```text
-neo pack list
-neo pack validate android-kotlin-dev
-neo pack install android-kotlin-dev MoneyMap
-neo pack installed MoneyMap
-neo pack remove android-kotlin-dev MoneyMap
+neo analyze MoneyMap
+neo pack recommend MoneyMap
 ```
 
-The AI-facing command model includes:
+AI-facing command:
 
 ```text
 @package-selector
-@package-install android-kotlin-dev
-@package-list
-@package-installed
-@package-remove android-kotlin-dev
-@package-validate android-kotlin-dev
+@package-selector for MoneyMap
 ```
 
-For multiple projects:
+Example output:
 
 ```text
-@package-install android-kotlin-dev for MoneyMap
+Project Analysis: MoneyMap
+✓ Android
+✓ Kotlin
+✓ Jetpack Compose
+✓ Gradle
+✓ Room
+✓ Hilt
+
+Pack Recommendations:
+android-kotlin-dev  100%
+solutions-architect 80%
+project-manager      70%
 ```
 
-## Syntra
+Scores represent technical relevance/match, not quality.
 
-Syntra remains internal to OrchestraX. It is not a command namespace.
-
-## Project state
-
-Installed packs are stored under:
-
-```text
-<project>/.orchestrax/packs/
-```
-
-The existing `neo-devkit` prototype remains untouched.
+Syntra remains an internal subsystem and is not exposed as a command.

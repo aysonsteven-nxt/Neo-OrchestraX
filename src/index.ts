@@ -4,6 +4,8 @@ import { routeCommand } from "./orchestration/command-router.js";
 import { loadPackRegistry } from "./packs/registry.js";
 import { validatePack } from "./packs/validator.js";
 import { installPack, listInstalled, removePack } from "./packs/installer.js";
+import { analyzeProject } from "./analyzer/project-analyzer.js";
+import { selectPacks } from "./selector/pack-selector.js";
 
 export interface Project {
   id: string;
@@ -54,6 +56,8 @@ Packs:
   neo pack install <pack> <project>
   neo pack remove <pack> <project>
   neo pack validate <pack>
+  neo analyze <project>
+  neo pack recommend <project>
 
 Command diagnostics:
   neo command "@package-selector"
@@ -79,6 +83,36 @@ if (command === "status" || args.join(" ") === "workspace status") {
   for (const project of workspace.projects) console.log(`  - ${project.name} (${project.id})`);
 } else if (args.join(" ") === "project list") {
   for (const project of workspace.projects) console.log(`${project.id}\t${project.path}`);
+} else if (command === "analyze" || (command === "pack" && args[1] === "recommend")) {
+  const projectName = command === "analyze" ? args[1] : args[2];
+  const project = workspace.projects.find(p => p.name.toLowerCase() === (projectName ?? "").toLowerCase());
+  if (!project) {
+    console.error("Project not found.");
+    process.exit(1);
+  }
+
+  const profile = analyzeProject(project);
+  if (command === "analyze") {
+    console.log(`Project Analysis: ${profile.projectName}`);
+    if (!profile.signals.length) {
+      console.log("No recognized project signals.");
+    } else {
+      for (const signal of profile.signals) {
+        console.log(`  ✓ ${signal.value} [${signal.category}] — ${signal.evidence}`);
+      }
+    }
+  } else {
+    const packs = loadPackRegistry(packRoot);
+    const result = selectPacks(profile, packs);
+    console.log(`Pack Recommendations: ${project.name}`);
+    for (const recommendation of result.recommendations) {
+      if (recommendation.score <= 0) continue;
+      console.log(`  ${recommendation.pack.name}  ${recommendation.score}%`);
+      for (const evidence of recommendation.evidence.slice(0, 5)) {
+        console.log(`    - ${evidence}`);
+      }
+    }
+  }
 } else if (command === "pack") {
   const sub = args[1];
 
