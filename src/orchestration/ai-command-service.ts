@@ -38,7 +38,7 @@ function orchestraxRoot(workspace: Workspace): string {
 }
 
 export function executeAiCommand(input: string, workspace: Workspace): AiCommandServiceResult {
-  const routed: CommandResult = routeCommand(input, workspace.projects, path.join(orchestraxRoot(workspace), "commands"));
+  const routed: CommandResult = routeCommand(input, workspace.projects, path.join(orchestraxRoot(workspace), "commands"), workspace.root);
   if (!routed.ok || !routed.definition) {
     return {
       ok: false,
