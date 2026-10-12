@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "neo-orchestrax/project-hub/comment@1",
+  "title": "Discussion Comment",
+  "type": "object",
+  "required": ["id", "author", "content", "createdAt"],
+  "properties": {
+    "id": { "type": "string" },
+    "author": { "type": "string" },
+    "content": { "type": "string" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

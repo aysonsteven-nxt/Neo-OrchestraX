@@ -1,0 +1,24 @@
+{
+  "id": "retrospective",
+  "version": "1.0.0",
+  "description": "Capture what worked, what did not, and actionable improvements for the next iteration.",
+  "category": "project-management",
+  "capabilities": [
+    "retrospective"
+  ],
+  "appliesToAgents": [
+    "*"
+  ],
+  "appliesTo": [
+    "*"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

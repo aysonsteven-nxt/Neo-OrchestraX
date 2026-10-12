@@ -1,0 +1,24 @@
+{
+  "id": "impediment-management",
+  "version": "1.0.0",
+  "description": "Identify, document, escalate, and track impediments affecting delivery.",
+  "category": "project-management",
+  "capabilities": [
+    "impediment-management"
+  ],
+  "appliesToAgents": [
+    "*"
+  ],
+  "appliesTo": [
+    "*"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

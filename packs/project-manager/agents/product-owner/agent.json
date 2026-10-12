@@ -1,0 +1,52 @@
+{
+  "id": "product-owner",
+  "version": "1.0.0",
+  "description": "Own product outcomes, clarify requirements, prioritize the backlog, and keep scope aligned with user and business value.",
+  "role": "Product Owner",
+  "capabilities": [
+    "requirements-management",
+    "user-story-writing",
+    "acceptance-criteria",
+    "backlog-prioritization",
+    "product-scope"
+  ],
+  "appliesTo": [
+    "*"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "skills": [
+    {
+      "id": "requirements-management",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "user-story-writing",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "acceptance-criteria",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "backlog-prioritization",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "product-scope",
+      "version": "1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

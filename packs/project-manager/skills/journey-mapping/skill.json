@@ -1,0 +1,24 @@
+{
+  "id": "journey-mapping",
+  "version": "1.0.0",
+  "description": "Map the customer journey, stages, goals, pain points, and opportunities.",
+  "category": "project-management",
+  "capabilities": [
+    "journey-mapping"
+  ],
+  "appliesToAgents": [
+    "*"
+  ],
+  "appliesTo": [
+    "*"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

@@ -22,6 +22,7 @@ export interface PackMetadata {
   skills: PackDependency[];
   dependencies: PackDependency[];
   compatibility?: PackCompatibility;
+  hub?: { enabled?: boolean; contributions?: string[] };
 }
 
 export interface PackRecord extends PackMetadata {

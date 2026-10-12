@@ -1,0 +1,24 @@
+{
+  "id": "product-scope",
+  "version": "1.0.0",
+  "description": "Define and protect product scope, boundaries, assumptions, and out-of-scope items.",
+  "category": "project-management",
+  "capabilities": [
+    "product-scope"
+  ],
+  "appliesToAgents": [
+    "*"
+  ],
+  "appliesTo": [
+    "*"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

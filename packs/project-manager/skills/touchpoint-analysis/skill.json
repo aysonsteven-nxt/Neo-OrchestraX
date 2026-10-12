@@ -1,0 +1,24 @@
+{
+  "id": "touchpoint-analysis",
+  "version": "1.0.0",
+  "description": "Evaluate customer touchpoints and identify gaps, friction, and improvement opportunities.",
+  "category": "project-management",
+  "capabilities": [
+    "touchpoint-analysis"
+  ],
+  "appliesToAgents": [
+    "*"
+  ],
+  "appliesTo": [
+    "*"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

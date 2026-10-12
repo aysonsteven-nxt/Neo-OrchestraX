@@ -51,7 +51,8 @@ export function normalizePackMetadata(raw: PackMetadata): PackMetadata {
     agents: normalizeDependency(raw.agents),
     skills: normalizeDependency(raw.skills),
     dependencies: normalizeDependency(raw.dependencies),
-    compatibility: raw.compatibility
+    compatibility: raw.compatibility,
+    hub: raw.hub
   };
 }
 

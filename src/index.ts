@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { executeAiCommand } from "./orchestration/ai-command-service.js";
 import { loadPackRegistry } from "./packs/registry.js";
 import { validatePack } from "./packs/validator.js";
-import { installPack, installWorkspacePack, listInstalled, listWorkspaceInstalled, removePack, removeWorkspacePack } from "./packs/installer.js";
+import { installPack, installProjectPack, installWorkspacePack, listInstalled, listWorkspaceInstalled, removeProjectPack, removeWorkspacePack } from "./packs/installer.js";
 import { composePack } from "./packs/composition.js";
 import { resolvePackGraph } from "./packs/resolver.js";
 import { analyzeProject } from "./analyzer/project-analyzer.js";
@@ -29,6 +29,7 @@ import { validateSkillDirectory } from "./skills/registry.js";
 import type { Project, Workspace } from "./workspace/types.js";
 import { isOrchestraXDirectory, isProjectDirectory, locateOrchestraX } from "./workspace/discovery.js";
 import { initWorkspace, initProject, workspaceConfigPath, projectConfigPath, readWorkspaceConfig } from "./workspace/config.js";
+import { ensureProjectHub, listHubInstalled, projectHubPath } from "./project-hub/manager.js";
 export type { Project, Workspace } from "./workspace/types.js";
 
 const installationRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -90,6 +91,8 @@ Workspace:
   neo workspace status
   neo project list
   neo project init [path]
+  neo hub status <project>
+  neo hub path <project>
 
 Packs:
   neo pack list
@@ -150,7 +153,7 @@ Syntra diagnostics:
   neo syntra add <project> "<title>" "<content>" <category>
   neo syntra status <project> <entry-id> <status>
 
-AI-facing OrchestraX commands (PRIMARY; provider-native invocation is separate):
+Legacy AI Command Compatibility (frozen; no new AI commands):
   /package-selector
   /package-install android-kotlin-dev for MoneyMap
   /context for MoneyMap
@@ -202,6 +205,9 @@ const packRoot = path.join(workspace.orchestraxRoot, "packs");
 const workspacePackRoot = path.join(workspace.root, ".orchestrax", "packs");
 const availablePackRoots = [packRoot, workspacePackRoot].filter((value, index, all) => all.indexOf(value) === index);
 
+function projectHubPackRoot(project: Project): string { return path.join(projectHubPath(workspace.root, project), "packs"); }
+function projectAvailablePackRoots(project: Project): string[] { return [...availablePackRoots, path.join(project.path, ".orchestrax", "packs"), projectHubPackRoot(project)].filter((value, index, all) => all.indexOf(value) === index); }
+
 if (command === "workspace" && args[1] === "init") {
   const target = path.resolve(args[2] ?? process.cwd());
   if (fs.existsSync(workspaceConfigPath(target))) { console.error(`Workspace already initialized: ${target}`); process.exit(1); }
@@ -214,6 +220,21 @@ if (command === "workspace" && args[1] === "init") {
   initProject(target);
   console.log(`Initialized Neo OrchestraX project: ${target}`);
   console.log("Created: .orchestrax/packs/, .orchestrax/syntra/");
+} else if (command === "hub") {
+  const sub = args[1];
+  const project = workspace.projects.find(p => p.name.toLowerCase() === (args[2] ?? "").toLowerCase());
+  if (!project) { console.error("Project not found."); process.exit(1); }
+  if (sub === "path") {
+    console.log(projectHubPath(workspace.root, project));
+  } else if (sub === "status") {
+    const root = projectHubPath(workspace.root, project);
+    if (!fs.existsSync(path.join(root, "hub.json"))) { console.log(`Project Hub: not initialized for ${project.name}`); process.exit(0); }
+    const manifest = ensureProjectHub(workspace.root, project);
+    console.log(`Project Hub: ${project.name}`);
+    console.log(`Path: ${root}`);
+    console.log(`Packs: ${manifest.packs.map(p => `${p.id}@${p.version}`).join(", ") || "none"}`);
+    console.log(`Board: ${fs.existsSync(path.join(root, "board", "board.json")) ? "ready" : "missing"}`);
+  } else { console.error("Usage: neo hub status <project> | neo hub path <project>"); process.exit(1); }
 } else if (command === "status" || args.join(" ") === "workspace status") {
   console.log(`Neo OrchestraX v${CLI_VERSION}`);
   console.log(`Workspace: ${workspace.root}`);
@@ -324,7 +345,7 @@ if (command === "workspace" && args[1] === "init") {
       const project = workspace.projects.find(p => p.name.toLowerCase() === (args[2] ?? "").toLowerCase());
       if (!project) { console.error("Project not found."); process.exit(1); }
       listWorkspaceInstalled(workspace.root).forEach(n => console.log(`${n}\tworkspace`));
-      listInstalled(project.path).forEach(n => console.log(`${n}\tproject`));
+      listInstalled(project.path, workspace.root, project).forEach(n => console.log(`${n}\tproject`));
     }
   } else if (sub === "install" || sub === "remove") {
     const pack = args[2];
@@ -333,8 +354,8 @@ if (command === "workspace" && args[1] === "init") {
     const project = workspaceScope ? undefined : workspace.projects.find(p => p.name.toLowerCase() === (args[3] ?? "").toLowerCase());
     if (!pack || (!workspaceScope && !project)) { console.error(`Usage: neo pack ${sub} <pack> <project> | neo pack ${sub} <pack> --workspace`); process.exit(1); }
     const result = sub === "install"
-      ? (workspaceScope ? installWorkspacePack(path.join(packRoot, pack), workspace.root, availablePackRoots) : installPack(path.join(packRoot, pack), project!.path, availablePackRoots))
-      : (workspaceScope ? removeWorkspacePack(workspace.root, pack) : removePack(project!.path, pack));
+      ? (workspaceScope ? installWorkspacePack(path.join(packRoot, pack), workspace.root, availablePackRoots) : installProjectPack(path.join(packRoot, pack), project!, workspace.root, projectAvailablePackRoots(project!)))
+      : (workspaceScope ? removeWorkspacePack(workspace.root, pack) : removeProjectPack(project!, workspace.root, pack));
     console.log(result.message);
     process.exit(result.ok ? 0 : 1);
   } else if (sub === "validate") {
@@ -348,10 +369,10 @@ if (command === "workspace" && args[1] === "init") {
     if (!packName) { console.error(`Usage: neo pack ${sub} <pack> [project]`); process.exit(1); }
     const project = args[3] ? workspace.projects.find(p => p.name.toLowerCase() === args[3].toLowerCase()) : undefined;
     if (args[3] && !project) { console.error("Project not found."); process.exit(1); }
-    const target = project && fs.existsSync(path.join(project.path, ".orchestrax", "packs", packName))
-      ? path.join(project.path, ".orchestrax", "packs", packName)
-      : path.join(packRoot, packName);
-    const graph = resolvePackGraph(target, availablePackRoots.concat(project ? [path.join(project.path, ".orchestrax", "packs")] : []));
+    const projectHubPack = project ? path.join(projectHubPackRoot(project), packName) : undefined;
+    const projectPack = project ? path.join(project.path, ".orchestrax", "packs", packName) : undefined;
+    const target = projectHubPack && fs.existsSync(projectHubPack) ? projectHubPack : projectPack && fs.existsSync(projectPack) ? projectPack : path.join(packRoot, packName);
+    const graph = resolvePackGraph(target, project ? projectAvailablePackRoots(project) : availablePackRoots);
     if (!graph) { console.error(`Pack not found or invalid: ${packName}`); process.exit(1); }
     if (sub === "show") {
       const p = graph.root.pack;

@@ -1,0 +1,24 @@
+{
+  "id": "backlog-prioritization",
+  "version": "1.0.0",
+  "description": "Prioritize backlog items using value, urgency, risk, dependencies, and scope considerations.",
+  "category": "project-management",
+  "capabilities": [
+    "backlog-prioritization"
+  ],
+  "appliesToAgents": [
+    "*"
+  ],
+  "appliesTo": [
+    "*"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

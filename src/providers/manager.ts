@@ -31,7 +31,7 @@ function buildContext(project: { id: string; name: string; path: string }, works
   const effectiveSkills = [...skillMap.values()];
   return {
     projectProfile: { signals: profile.signals },
-    installedPacks: listInstalled(project.path),
+    installedPacks: listInstalled(project.path, workspaceRoot, project),
     skills: effectiveSkills.map(s => ({ id: s.id, version: s.version, category: s.category, source: s.source, capabilities: s.capabilities, appliesToAgents: s.appliesToAgents, content: s.content })),
     instructions: instructionResolution.instructions.map(i => ({ id: i.id, version: i.version, category: i.category, source: i.source, required: i.required, content: i.content })),
     agents: agentResolution.agents.map(a => ({ id: a.id, version: a.version, role: a.role, source: a.source, capabilities: a.capabilities, content: a.content, requiredInstructions: a.resolvedInstructions, resolvedSkills: a.resolvedSkills })),

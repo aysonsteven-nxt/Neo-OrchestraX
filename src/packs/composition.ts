@@ -6,6 +6,7 @@ import { resolveInstructions } from "../instructions/resolver.js";
 import { resolveAgents } from "../agents/resolver.js";
 import { resolveSkills } from "../skills/resolver.js";
 import { listInstalled } from "./installer.js";
+import { projectHubPacksPath } from "../project-hub/manager.js";
 import { resolvePackGraph, satisfiesVersion, validatePackCompatibility } from "./resolver.js";
 import type { PackGraphResolution, PackMetadata } from "./types.js";
 
@@ -20,14 +21,17 @@ export function composePack(project: Project, packName: string, orchestraxRoot: 
   const builtIn = path.join(orchestraxRoot, "packs");
   const workspaceInstalled = path.join(workspaceRoot, ".orchestrax", "packs");
   const installed = path.join(project.path, ".orchestrax", "packs");
-  const packPath = fs.existsSync(path.join(installed, packName, "pack.json"))
-    ? path.join(installed, packName)
-    : fs.existsSync(path.join(workspaceInstalled, packName, "pack.json"))
-      ? path.join(workspaceInstalled, packName)
-      : path.join(builtIn, packName);
+  const hubInstalled = projectHubPacksPath(workspaceRoot, project);
+  const packPath = fs.existsSync(path.join(hubInstalled, packName, "pack.json"))
+    ? path.join(hubInstalled, packName)
+    : fs.existsSync(path.join(installed, packName, "pack.json"))
+      ? path.join(installed, packName)
+      : fs.existsSync(path.join(workspaceInstalled, packName, "pack.json"))
+        ? path.join(workspaceInstalled, packName)
+        : path.join(builtIn, packName);
   if (!fs.existsSync(packPath)) return undefined;
 
-  const graph = resolvePackGraph(packPath, [builtIn, workspaceInstalled, installed]);
+  const graph = resolvePackGraph(packPath, [builtIn, workspaceInstalled, installed, hubInstalled]);
   if (!graph) return undefined;
   const profile = analyzeProject(project);
   const capabilities = new Set(profile.signals.flatMap(s => [s.key.toLowerCase(), s.value.toLowerCase()]));

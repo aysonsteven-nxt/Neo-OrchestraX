@@ -1,0 +1,24 @@
+{
+  "id": "sprint-management",
+  "version": "1.0.0",
+  "description": "Manage sprint flow, status, commitments, and delivery visibility.",
+  "category": "project-management",
+  "capabilities": [
+    "sprint-management"
+  ],
+  "appliesToAgents": [
+    "*"
+  ],
+  "appliesTo": [
+    "*"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

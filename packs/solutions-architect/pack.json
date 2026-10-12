@@ -1,6 +1,6 @@
 {
   "name": "solutions-architect",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "System, component, API, data, integration, security, deployment and architecture design.",
   "capabilities": [
     "system-architecture",
@@ -26,9 +26,15 @@
   "dependencies": [
     {
       "id": "project-manager",
-      "version": "^0.2.0",
+      "version": "^0.3.0",
       "required": true
     }
   ],
-  "compatibility": {}
+  "compatibility": {},
+  "hub": {
+    "enabled": true,
+    "contributions": [
+      "architecture"
+    ]
+  }
 }

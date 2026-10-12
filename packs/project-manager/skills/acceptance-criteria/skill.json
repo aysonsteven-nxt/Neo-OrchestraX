@@ -1,0 +1,24 @@
+{
+  "id": "acceptance-criteria",
+  "version": "1.0.0",
+  "description": "Define observable, testable acceptance criteria that establish when a story is complete.",
+  "category": "project-management",
+  "capabilities": [
+    "acceptance-criteria"
+  ],
+  "appliesToAgents": [
+    "*"
+  ],
+  "appliesTo": [
+    "*"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

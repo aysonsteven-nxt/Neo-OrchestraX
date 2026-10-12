@@ -41,6 +41,10 @@ export function validatePack(packPath: string, dependencyRoots: string[] = []): 
   validateDependencyArray("agents", metadata.agents, errors);
   validateDependencyArray("skills", metadata.skills, errors);
   validateDependencyArray("dependencies", metadata.dependencies, errors);
+  if (metadata.hub !== undefined) {
+    if (typeof metadata.hub !== "object" || metadata.hub === null) errors.push("hub must be an object");
+    else if (metadata.hub.contributions !== undefined && !Array.isArray(metadata.hub.contributions)) errors.push("hub.contributions must be an array");
+  }
 
   if (errors.length) return { valid: false, errors, warnings, metadata };
 
@@ -50,6 +54,15 @@ export function validatePack(packPath: string, dependencyRoots: string[] = []): 
   warnings.push(...graph.issues.filter(i => !i.required).map(i => i.message));
 
   const resourceRoots = dependencyRoots;
+  for (const resource of [
+    ...metadata.agents.map(d => ["agent", d] as const),
+    ...metadata.skills.map(d => ["skill", d] as const)
+  ]) {
+    const embeddedDir = path.join(packPath, resource[0] === "agent" ? "agents" : "skills", resource[1].id);
+    if (resource[1].required && !fs.existsSync(embeddedDir)) {
+      // External resources are resolved through the normal roots below.
+    }
+  }
   for (const resource of [
     ...metadata.instructions.map(d => ["instruction", d] as const),
     ...metadata.agents.map(d => ["agent", d] as const),

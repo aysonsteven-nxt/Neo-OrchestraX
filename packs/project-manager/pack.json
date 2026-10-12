@@ -1,15 +1,106 @@
 {
   "name": "project-manager",
-  "version": "0.2.0",
-  "description": "Requirements, scope, business rules, acceptance criteria, assumptions, constraints and project status.",
+  "version": "0.3.0",
+  "description": "Product ownership, Scrum facilitation, customer journey analysis, requirements, backlog, scope, acceptance criteria and project status.",
   "capabilities": [
     "requirements",
     "scope",
     "acceptance-criteria",
-    "project-status"
+    "project-status",
+    "product-management",
+    "scrum",
+    "customer-journey",
+    "backlog-management"
   ],
-  "agents": [],
-  "skills": [],
+  "agents": [
+    {
+      "id": "product-owner",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "scrum-master",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "customer-journey-expert",
+      "version": "1.0.0",
+      "required": true
+    }
+  ],
+  "skills": [
+    {
+      "id": "requirements-management",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "user-story-writing",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "acceptance-criteria",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "backlog-prioritization",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "product-scope",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "sprint-management",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "backlog-management",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "impediment-management",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "sprint-planning",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "retrospective",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "journey-mapping",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "persona-analysis",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "touchpoint-analysis",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "experience-requirements",
+      "version": "1.0.0",
+      "required": true
+    }
+  ],
   "instructions": [
     {
       "id": "common/documentation",
@@ -18,5 +109,12 @@
     }
   ],
   "dependencies": [],
-  "compatibility": {}
+  "compatibility": {},
+  "hub": {
+    "enabled": true,
+    "contributions": [
+      "board",
+      "discussions"
+    ]
+  }
 }

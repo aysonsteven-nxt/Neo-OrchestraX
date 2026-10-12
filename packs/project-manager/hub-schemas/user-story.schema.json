@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "neo-orchestrax/project-hub/user-story@1",
+  "title": "User Story",
+  "type": "object",
+  "required": ["id", "title", "description", "acceptanceCriteria", "status", "priority", "subtasks", "comments"],
+  "properties": {
+    "id": { "type": "string" },
+    "epicId": { "type": "string" },
+    "title": { "type": "string" },
+    "description": { "type": "string" },
+    "acceptanceCriteria": { "type": "array", "items": { "type": "string" } },
+    "status": { "type": "string" },
+    "priority": { "type": "string" },
+    "subtasks": { "type": "array", "items": { "type": "string" } },
+    "comments": { "type": "array", "items": { "$ref": "comment@1" } }
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "id": "customer-journey-expert",
+  "version": "1.0.0",
+  "description": "Analyze users, journeys, touchpoints, and experience requirements so product decisions reflect the end-to-end customer experience.",
+  "role": "Customer Journey Expert",
+  "capabilities": [
+    "journey-mapping",
+    "persona-analysis",
+    "touchpoint-analysis",
+    "experience-requirements"
+  ],
+  "appliesTo": [
+    "*"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "skills": [
+    {
+      "id": "journey-mapping",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "persona-analysis",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "touchpoint-analysis",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "experience-requirements",
+      "version": "1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

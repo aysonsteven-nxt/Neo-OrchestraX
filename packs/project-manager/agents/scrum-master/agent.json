@@ -1,0 +1,52 @@
+{
+  "id": "scrum-master",
+  "version": "1.0.0",
+  "description": "Facilitate delivery flow, sprint planning, backlog readiness, impediment removal, and continuous improvement.",
+  "role": "Scrum Master",
+  "capabilities": [
+    "sprint-management",
+    "backlog-management",
+    "impediment-management",
+    "sprint-planning",
+    "retrospective"
+  ],
+  "appliesTo": [
+    "*"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "skills": [
+    {
+      "id": "sprint-management",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "backlog-management",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "impediment-management",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "sprint-planning",
+      "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "retrospective",
+      "version": "1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

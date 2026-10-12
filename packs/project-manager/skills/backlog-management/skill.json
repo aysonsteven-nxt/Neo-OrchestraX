@@ -1,0 +1,24 @@
+{
+  "id": "backlog-management",
+  "version": "1.0.0",
+  "description": "Keep the backlog structured, actionable, prioritized, and ready for delivery.",
+  "category": "project-management",
+  "capabilities": [
+    "backlog-management"
+  ],
+  "appliesToAgents": [
+    "*"
+  ],
+  "appliesTo": [
+    "*"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

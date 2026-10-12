@@ -1,0 +1,24 @@
+{
+  "id": "requirements-management",
+  "version": "1.0.0",
+  "description": "Capture, clarify, structure, and maintain project requirements and their rationale.",
+  "category": "project-management",
+  "capabilities": [
+    "requirements-management"
+  ],
+  "appliesToAgents": [
+    "*"
+  ],
+  "appliesTo": [
+    "*"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

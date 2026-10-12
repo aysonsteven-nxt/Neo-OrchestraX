@@ -1,0 +1,24 @@
+{
+  "id": "experience-requirements",
+  "version": "1.0.0",
+  "description": "Translate customer experience needs into concrete product and experience requirements.",
+  "category": "project-management",
+  "capabilities": [
+    "experience-requirements"
+  ],
+  "appliesToAgents": [
+    "*"
+  ],
+  "appliesTo": [
+    "*"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

@@ -3,7 +3,7 @@ import fs from "node:fs";
 import type { Workspace } from "../workspace/types.js";
 import { analyzeProject } from "../analyzer/project-analyzer.js";
 import { loadPackRegistry } from "../packs/registry.js";
-import { installPack, installWorkspacePack, listInstalled, listWorkspaceInstalled, removePack, removeWorkspacePack } from "../packs/installer.js";
+import { installProjectPack, installWorkspacePack, listInstalled, listWorkspaceInstalled, removeProjectPack, removeWorkspacePack } from "../packs/installer.js";
 import { validatePack } from "../packs/validator.js";
 import { composePack } from "../packs/composition.js";
 import { resolvePackGraph } from "../packs/resolver.js";
@@ -37,6 +37,7 @@ function packRoot(workspace: Workspace): string {
 function workspacePackRoot(workspace: Workspace): string {
   return path.join(workspace.root, ".orchestrax", "packs");
 }
+function projectHubPackRoot(workspace: Workspace, project: { id: string; path: string }): string { return path.join(workspace.root, `${project.id}-docs`, "packs"); }
 
 function orchestraxRoot(workspace: Workspace): string {
   return workspace.orchestraxRoot;
@@ -59,7 +60,7 @@ export function executeAiCommand(input: string, workspace: Workspace): AiCommand
     return { ok: false, output: "This OrchestraX AI command requires a target project. Specify: for <project>", warning: routed.warning };
   }
 
-  const roots = [packRoot(workspace), workspacePackRoot(workspace), ...(project ? [path.join(project.path, ".orchestrax", "packs")] : [])];
+  const roots = [packRoot(workspace), workspacePackRoot(workspace), ...(project ? [path.join(project.path, ".orchestrax", "packs"), projectHubPackRoot(workspace, project)] : [])];
 
   let output: string;
   try {
@@ -82,7 +83,7 @@ export function executeAiCommand(input: string, workspace: Workspace): AiCommand
         const pack = command.args[0];
         if (!pack) return { ok: false, output: "Usage: /package-install <pack> for <project>", warning: routed.warning };
         const source = path.join(packRoot(workspace), pack);
-        const result = installPack(source, project.path, roots);
+        const result = installProjectPack(source, project, workspace.root, roots);
         output = result.message;
         if (result.installed?.length) output += `\nInstalled:\n${result.installed.map(item => `- ${item}`).join("\n")}`;
         if (!result.ok) return { ok: false, output, warning: routed.warning };
@@ -97,7 +98,7 @@ export function executeAiCommand(input: string, workspace: Workspace): AiCommand
       }
       case "package-installed": {
         if (!project) return { ok: false, output: "Project target required. Use: /package-installed for <project>", warning: routed.warning };
-        const installed = [...listWorkspaceInstalled(workspace.root).map(item => `${item} [workspace]`), ...listInstalled(project.path).map(item => `${item} [project]`)];
+        const installed = [...listWorkspaceInstalled(workspace.root).map(item => `${item} [workspace]`), ...listInstalled(project.path, workspace.root, project).map(item => `${item} [project]`)];
         output = installed.length
           ? `Installed OrchestraX packs: ${project.name}\n${installed.map(item => `- ${item}`).join("\n")}`
           : `No OrchestraX packs are installed for ${project.name}.`;
@@ -107,7 +108,7 @@ export function executeAiCommand(input: string, workspace: Workspace): AiCommand
         if (!project) return { ok: false, output: "Project target required. Use: /package-remove <pack> for <project>", warning: routed.warning };
         const pack = command.args[0];
         if (!pack) return { ok: false, output: "Usage: /package-remove <pack> for <project>", warning: routed.warning };
-        const result = removePack(project.path, pack);
+        const result = removeProjectPack(project, workspace.root, pack);
         output = result.message;
         if (!result.ok) return { ok: false, output, warning: routed.warning };
         break;

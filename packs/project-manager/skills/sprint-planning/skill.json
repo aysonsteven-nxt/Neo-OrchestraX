@@ -1,0 +1,24 @@
+{
+  "id": "sprint-planning",
+  "version": "1.0.0",
+  "description": "Prepare sprint goals, select ready work, and establish a coherent sprint plan.",
+  "category": "project-management",
+  "capabilities": [
+    "sprint-planning"
+  ],
+  "appliesToAgents": [
+    "*"
+  ],
+  "appliesTo": [
+    "*"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

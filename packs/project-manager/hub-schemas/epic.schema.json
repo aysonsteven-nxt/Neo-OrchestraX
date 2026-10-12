@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "neo-orchestrax/project-hub/epic@1",
+  "title": "Epic",
+  "type": "object",
+  "required": ["id", "title", "status", "priority", "userStories"],
+  "properties": {
+    "id": { "type": "string" },
+    "title": { "type": "string" },
+    "description": { "type": "string" },
+    "status": { "type": "string" },
+    "priority": { "type": "string" },
+    "userStories": { "type": "array", "items": { "type": "string" } },
+    "comments": { "type": "array", "items": { "type": "object" } }
+  }
+}

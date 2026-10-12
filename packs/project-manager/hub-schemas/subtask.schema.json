@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "neo-orchestrax/project-hub/subtask@1",
+  "title": "Subtask",
+  "type": "object",
+  "required": ["id", "storyId", "title", "status", "completed"],
+  "properties": {
+    "id": { "type": "string" },
+    "storyId": { "type": "string" },
+    "title": { "type": "string" },
+    "description": { "type": "string" },
+    "status": { "type": "string" },
+    "completed": { "type": "boolean" },
+    "comments": { "type": "array", "items": { "$ref": "comment@1" } }
+  }
+}
