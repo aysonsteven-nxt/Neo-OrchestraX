@@ -15,6 +15,8 @@ import { resolveTaskContext } from "./tasks/context.js";
 import { createHandoff, getHandoff, getLatestHandoff, listHandoffs } from "./handoff/manager.js";
 import { formatHandoff } from "./handoff/formatter.js";
 import { listProviders, syncProvider, syncAllProviders } from "./providers/manager.js";
+import { defaultInstructionsRoot, userInstructionsRoot, workspaceInstructionsRoot, projectInstructionsRoot, listInstructionDirectories, validateInstructionDirectory } from "./instructions/registry.js";
+import { findInstruction, resolveInstructions } from "./instructions/resolver.js";
 
 export interface Project { id: string; name: string; path: string; }
 export interface Workspace { root: string; projects: Project[]; }
@@ -38,7 +40,7 @@ export function discoverWorkspace(root: string): Workspace {
 
 function help(): void {
   console.log(`
-Neo OrchestraX v0.9.0
+Neo OrchestraX v0.10.0
 
 Workspace:
   neo workspace status
@@ -68,6 +70,12 @@ Providers:
   neo provider list
   neo provider sync <project> [provider]
 
+Instructions / Rails:
+  neo instruction list <project>
+  neo instruction show <project> <instruction-id>
+  neo instruction effective <project>
+  neo instruction validate <path>
+
 Syntra diagnostics:
   neo syntra init <project>
   neo syntra list <project>
@@ -82,6 +90,8 @@ AI-facing commands are routed through Neo OrchestraX:
   @resume for MoneyMap
   @provider-sync
   @provider-sync copilot for MoneyMap
+  @instructions
+  @instructions for MoneyMap
 `);
 }
 
@@ -93,7 +103,7 @@ const workspace = discoverWorkspace(process.cwd());
 const packRoot = path.join(workspace.root, "neo-orchestrax", "packs");
 
 if (command === "status" || args.join(" ") === "workspace status") {
-  console.log("Neo OrchestraX v0.9.0");
+  console.log("Neo OrchestraX v0.10.0");
   console.log(`Workspace: ${workspace.root}`);
   console.log(`Projects: ${workspace.projects.length}`);
   workspace.projects.forEach(p => console.log(`  - ${p.name} (${p.id})`));
@@ -201,6 +211,42 @@ if (command === "status" || args.join(" ") === "workspace status") {
     console.log(result.valid ? `Valid: ${args[2]}` : `Invalid: ${result.errors.join("; ")}`);
     process.exit(result.valid ? 0 : 1);
   } else { console.error("Unknown pack command."); process.exit(1); }
+} else if (command === "instruction") {
+  const sub = args[1];
+  if (sub === "validate") {
+    const target = path.resolve(args[2] ?? "");
+    const errors = validateInstructionDirectory(target);
+    console.log(errors.length ? `Invalid: ${errors.join("; ")}` : `Valid instruction: ${target}`);
+    process.exit(errors.length ? 1 : 0);
+  }
+
+  const project = workspace.projects.find(p => p.name.toLowerCase() === (args[2] ?? "").toLowerCase());
+  if (!project) { console.error("Project not found."); process.exit(1); }
+  const orchestraxRoot = path.join(workspace.root, "neo-orchestrax");
+  const resolution = resolveInstructions(orchestraxRoot, workspace.root, project);
+
+  if (sub === "list" || sub === "effective") {
+    console.log(`Effective OrchestraX Rails: ${project.name}`);
+    resolution.instructions.forEach(i => console.log(`${i.id}@${i.version} | ${i.source} | ${i.required ? "required" : "optional"} | ${i.description}`));
+    if (resolution.conflicts.length) {
+      console.log("\nResolution notes:");
+      resolution.conflicts.forEach(c => console.log(`  ! ${c}`));
+    }
+  } else if (sub === "show") {
+    const id = args[3];
+    if (!id) { console.error("Usage: neo instruction show <project> <instruction-id>"); process.exit(1); }
+    const instruction = findInstruction(resolution, id);
+    if (!instruction) { console.error(`Instruction not found: ${id}`); process.exit(1); }
+    console.log(`# ${instruction.id}`);
+    console.log(`Version: ${instruction.version}`);
+    console.log(`Source: ${instruction.source}`);
+    console.log(`Category: ${instruction.category}`);
+    console.log(`Required: ${instruction.required}`);
+    console.log(`Overrideable: ${instruction.overrideable}`);
+    console.log(`\n${instruction.content}`);
+  } else {
+    console.error("Unknown instruction command."); process.exit(1);
+  }
 } else if (command === "syntra") {
   const sub = args[1];
   const project = workspace.projects.find(p => p.name.toLowerCase() === (args[2] ?? "").toLowerCase());
@@ -239,7 +285,23 @@ if (command === "status" || args.join(" ") === "workspace status") {
   }
 
   const project = result.project!;
-  if (result.command.name === "provider-sync") {
+  if (result.command.name === "instructions") {
+    const orchestraxRoot = path.join(workspace.root, "neo-orchestrax");
+    const resolution = resolveInstructions(orchestraxRoot, workspace.root, project);
+    const requestedId = result.command.args[0];
+    if (requestedId) {
+      const instruction = findInstruction(resolution, requestedId);
+      if (!instruction) { console.error(`Instruction not found: ${requestedId}`); process.exit(1); }
+      console.log(`# ${instruction.id}`);
+      console.log(`Version: ${instruction.version}`);
+      console.log(`Source: ${instruction.source}`);
+      console.log(`\n${instruction.content}`);
+    } else {
+      console.log(`Effective OrchestraX Rails: ${project.name}`);
+      resolution.instructions.forEach(i => console.log(`- ${i.id}@${i.version} [${i.source}${i.required ? ", required" : ""}]`));
+      if (resolution.conflicts.length) resolution.conflicts.forEach(c => console.log(`! ${c}`));
+    }
+  } else if (result.command.name === "provider-sync") {
     const provider = result.command.args[0];
     const results = provider ? [syncProvider(project, provider)] : syncAllProviders(project);
     console.log(`Provider sync: ${project.name}`);

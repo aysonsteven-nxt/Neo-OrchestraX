@@ -1,0 +1,10 @@
+{
+  "id": "common/security-baseline",
+  "version": "1.0.0",
+  "description": "Baseline security and secret-handling expectations.",
+  "category": "security",
+  "appliesTo": ["*"],
+  "required": true,
+  "overrideable": false,
+  "priority": 100
+}

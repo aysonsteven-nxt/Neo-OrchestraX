@@ -1,0 +1,10 @@
+{
+  "id": "common/documentation",
+  "version": "1.0.0",
+  "description": "Baseline documentation expectations.",
+  "category": "common",
+  "appliesTo": ["*"],
+  "required": false,
+  "overrideable": true,
+  "priority": 0
+}

@@ -1,0 +1,10 @@
+{
+  "id": "web-vanilla/standards",
+  "version": "1.0.0",
+  "description": "Vanilla web and TypeScript standards baseline.",
+  "category": "web",
+  "appliesTo": ["typescript"],
+  "required": false,
+  "overrideable": true,
+  "priority": 0
+}

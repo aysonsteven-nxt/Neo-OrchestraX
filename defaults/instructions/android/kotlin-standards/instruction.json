@@ -1,0 +1,10 @@
+{
+  "id": "android/kotlin-standards",
+  "version": "1.0.0",
+  "description": "Kotlin and Android coding standards baseline.",
+  "category": "android",
+  "appliesTo": ["kotlin","android"],
+  "required": false,
+  "overrideable": true,
+  "priority": 0
+}

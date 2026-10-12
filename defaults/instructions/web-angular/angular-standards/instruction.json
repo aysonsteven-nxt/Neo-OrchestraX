@@ -1,0 +1,10 @@
+{
+  "id": "web-angular/standards",
+  "version": "1.0.0",
+  "description": "Angular and TypeScript frontend standards baseline.",
+  "category": "web",
+  "appliesTo": ["angular","typescript"],
+  "required": false,
+  "overrideable": true,
+  "priority": 0
+}

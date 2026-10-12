@@ -5,6 +5,7 @@ import { listInstalled } from "../packs/installer.js";
 import { listSyntra } from "../syntra/manager.js";
 import { getLatestHandoff } from "../handoff/manager.js";
 import { getProvider, providers } from "./adapters.js";
+import { resolveInstructions } from "../instructions/resolver.js";
 import type { ProviderArtifact, ProviderContext, ProviderId } from "./types.js";
 
 export interface ProviderSyncResult {
@@ -13,13 +14,15 @@ export interface ProviderSyncResult {
   skipped: string[];
 }
 
-function buildContext(project: { id: string; name: string; path: string }): ProviderContext {
+function buildContext(project: { id: string; name: string; path: string }, workspaceRoot: string, orchestraxRoot: string): ProviderContext {
   const profile = analyzeProject(project);
   const syntra = listSyntra(project.path);
   const handoff = getLatestHandoff(project.path);
+  const instructionResolution = resolveInstructions(orchestraxRoot, workspaceRoot, project);
   return {
     projectProfile: { signals: profile.signals },
     installedPacks: listInstalled(project.path),
+    instructions: instructionResolution.instructions.map(i => ({ id: i.id, version: i.version, category: i.category, source: i.source, required: i.required, content: i.content })),
     syntra: syntra.map(e => ({ title: e.title, content: e.content, category: e.category, status: e.status })),
     latestHandoff: handoff ? { title: handoff.title, objective: handoff.objective, nextAction: handoff.nextAction } : undefined
   };
@@ -40,7 +43,9 @@ function writeArtifact(projectPath: string, artifact: ProviderArtifact): "writte
 export function syncProvider(project: { id: string; name: string; path: string }, providerId: string): ProviderSyncResult {
   const provider = getProvider(providerId);
   if (!provider) throw new Error(`Unknown provider: ${providerId}`);
-  const context = buildContext(project);
+  const workspaceRoot = path.resolve(project.path, "..");
+  const orchestraxRoot = path.join(workspaceRoot, "neo-orchestrax");
+  const context = buildContext(project, workspaceRoot, orchestraxRoot);
   const result: ProviderSyncResult = { provider: provider.id, artifacts: [], skipped: [] };
   for (const artifact of provider.generate(project, context)) {
     (writeArtifact(project.path, artifact) === "written" ? result.artifacts : result.skipped).push(artifact.relativePath);
@@ -62,7 +67,7 @@ function writeManifest(projectPath: string): void {
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, "manifest.json"), JSON.stringify({
     generatedBy: "neo-orchestrax",
-    version: "0.9.0",
+    version: "0.10.0",
     providers: providers.map(p => p.id),
     updatedAt: new Date().toISOString()
   }, null, 2) + "\n", "utf8");

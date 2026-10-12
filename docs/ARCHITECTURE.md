@@ -1,29 +1,21 @@
-# Neo OrchestraX V0.6.0 Architecture
+# Architecture
 
 ```text
-Developer / AI Agent
-        |
-        | @context
-        v
- Neo OrchestraX
-        |
-   Project Resolver
-        |
-        v
- Context Resolver
-    /          \
-Project       Syntra
-Profile
-    \          /
-     \        /
-      Focused Context
-            |
-            v
-        AI Agent
+Neo OrchestraX
+│
+├── Workspace / Project Resolution
+├── Packs
+├── Project Intelligence
+├── Instructions / Rails
+│   ├── Defaults
+│   ├── User
+│   ├── Workspace
+│   └── Project
+├── Syntra
+├── Context Resolver
+├── Tasks
+├── Handoff / Resume
+└── Provider Adapters
 ```
 
-The resolver is deliberately separate from Syntra.
-
-Syntra stores persistent intelligence.
-
-The Context Resolver decides what portion is relevant to the current request.
+Instructions are canonical OrchestraX configuration. Provider adapters consume the resolved instructions and generate provider-specific artifacts.

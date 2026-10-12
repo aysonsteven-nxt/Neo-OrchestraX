@@ -1,0 +1,10 @@
+{
+  "id": "common/coding-standards",
+  "version": "1.0.0",
+  "description": "Baseline coding standards for maintainable changes.",
+  "category": "common",
+  "appliesTo": ["*"],
+  "required": true,
+  "overrideable": true,
+  "priority": 0
+}

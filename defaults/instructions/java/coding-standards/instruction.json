@@ -1,0 +1,10 @@
+{
+  "id": "java/coding-standards",
+  "version": "1.0.0",
+  "description": "Java coding standards baseline.",
+  "category": "java",
+  "appliesTo": ["java"],
+  "required": false,
+  "overrideable": true,
+  "priority": 0
+}

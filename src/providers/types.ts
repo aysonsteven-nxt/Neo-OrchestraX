@@ -17,6 +17,7 @@ export interface ProviderContext {
     signals: Array<{ category: string; value: string; evidence: string }>;
   };
   installedPacks: string[];
+  instructions: Array<{ id: string; version: string; category: string; source: string; required: boolean; content: string }>;
   syntra: Array<{ title: string; content: string; category: string; status: string }>;
   latestHandoff?: {
     title: string;

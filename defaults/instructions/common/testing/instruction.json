@@ -1,0 +1,10 @@
+{
+  "id": "common/testing",
+  "version": "1.0.0",
+  "description": "Baseline testing expectations.",
+  "category": "common",
+  "appliesTo": ["*"],
+  "required": true,
+  "overrideable": true,
+  "priority": 0
+}
