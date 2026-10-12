@@ -1,30 +1,29 @@
-# Neo OrchestraX V0.2.0 Architecture
+# Neo OrchestraX V0.6.0 Architecture
 
 ```text
 Developer / AI Agent
         |
-        | @command
+        | @context
         v
- Command Parser
+ Neo OrchestraX
+        |
+   Project Resolver
         |
         v
- Command Router
-        |
-        v
- Project Resolver
-        |
-   +----+----+
-   |         |
-resolved   ambiguous
-   |         |
-   v         v
-Handler    ask user
-   |
-   +-----------------------------+
-   |             |               |
- Agents        Packs           Context
-                                  |
-                                Syntra
+ Context Resolver
+    /          \
+Project       Syntra
+Profile
+    \          /
+     \        /
+      Focused Context
+            |
+            v
+        AI Agent
 ```
 
-The command layer is intentionally provider-neutral. Copilot, Gemini/Antigravity, Claude Code, Cursor, or another agent provider can eventually invoke the same canonical OrchestraX command model.
+The resolver is deliberately separate from Syntra.
+
+Syntra stores persistent intelligence.
+
+The Context Resolver decides what portion is relevant to the current request.

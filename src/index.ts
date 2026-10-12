@@ -8,6 +8,8 @@ import { analyzeProject } from "./analyzer/project-analyzer.js";
 import { selectPacks } from "./selector/pack-selector.js";
 import { createEntry, listSyntra, searchSyntra, changeSyntraStatus } from "./syntra/manager.js";
 import { initSyntra } from "./syntra/store.js";
+import { resolveContext } from "./context/resolver.js";
+import { formatContext } from "./context/formatter.js";
 
 export interface Project { id: string; name: string; path: string; }
 export interface Workspace { root: string; projects: Project[]; }
@@ -45,6 +47,7 @@ Packs:
   neo pack validate <pack>
   neo analyze <project>
   neo pack recommend <project>
+  neo context <project> [query]
 
 Syntra diagnostics:
   neo syntra init <project>
@@ -69,6 +72,16 @@ if (command === "status" || args.join(" ") === "workspace status") {
   workspace.projects.forEach(p => console.log(`  - ${p.name} (${p.id})`));
 } else if (args.join(" ") === "project list") {
   workspace.projects.forEach(p => console.log(`${p.id}\t${p.path}`));
+} else if (command === "context") {
+  const projectName = args[1];
+  const project = workspace.projects.find(p => p.name.toLowerCase() === (projectName ?? "").toLowerCase());
+  if (!project) {
+    console.error("Project not found.");
+    process.exit(1);
+  }
+
+  const query = args.slice(2).join(" ").trim() || undefined;
+  console.log(formatContext(resolveContext(project, query)));
 } else if (command === "analyze" || (command === "pack" && args[1] === "recommend")) {
   const projectName = command === "analyze" ? args[1] : args[2];
   const project = workspace.projects.find(p => p.name.toLowerCase() === (projectName ?? "").toLowerCase());
