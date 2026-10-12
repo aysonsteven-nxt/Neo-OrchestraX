@@ -164,8 +164,28 @@ AI-facing OrchestraX commands (PRIMARY; provider-native invocation is separate):
   /skill compose-development for MoneyMap
   /provider-sync copilot for MoneyMap
 
-Diagnostic bridge (secondary CLI interface):
+AI Command Compatibility:
   neo command "/package-selector for MoneyMap"
+
+  The neo command bridge executes the canonical /... OrchestraX AI command
+  language through the same AI Command Engine used by provider integrations.
+
+  Examples:
+    neo command "/package-selector for MoneyMap"
+    neo command "/package-install android-kotlin-dev for MoneyMap"
+    neo command "/context for MoneyMap"
+    neo command "/task start \"Transaction history\" \"Track transaction history\" for MoneyMap"
+    neo command "/handoff for MoneyMap"
+    neo command "/resume for MoneyMap"
+    neo command "/instructions for MoneyMap"
+    neo command "/agents for MoneyMap"
+    neo command "/agent android-dev for MoneyMap"
+    neo command "/skills for MoneyMap"
+    neo command "/skill compose-development for MoneyMap"
+    neo command "/provider-sync copilot for MoneyMap"
+
+  Native neo ... commands remain the direct CLI interface; the compatibility
+  bridge is provided when the canonical AI command syntax is preferred.
 `);
 }
 
