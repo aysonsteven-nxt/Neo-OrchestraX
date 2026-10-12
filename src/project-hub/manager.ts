@@ -3,6 +3,39 @@ import path from "node:path";
 import type { Project } from "../workspace/types.js";
 import type { ProjectHubManifest } from "./types.js";
 
+function stripJsonCommentsAndTrailingCommas(input: string): string {
+  return input.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/,\s*([}\]])/g, "$1");
+}
+
+/** Register a generated Project Hub folder in the VS Code multi-root workspace. */
+export function registerProjectHubInWorkspace(workspaceFile: string | undefined, hubPath: string): void {
+  if (!workspaceFile || !fs.existsSync(workspaceFile)) return;
+
+  try {
+    const raw = fs.readFileSync(workspaceFile, "utf8");
+    const config = JSON.parse(stripJsonCommentsAndTrailingCommas(raw)) as { folders?: Array<{ path?: string; name?: string }> };
+    if (!Array.isArray(config.folders)) config.folders = [];
+
+    const workspaceDir = path.dirname(workspaceFile);
+    const resolvedHub = path.resolve(hubPath);
+    const alreadyRegistered = config.folders.some(folder => {
+      if (!folder?.path) return false;
+      return path.resolve(workspaceDir, folder.path) === resolvedHub;
+    });
+
+    if (alreadyRegistered) return;
+
+    let folderPath = path.relative(workspaceDir, resolvedHub);
+    if (!folderPath) folderPath = ".";
+    config.folders.push({ path: folderPath });
+
+    fs.writeFileSync(workspaceFile, JSON.stringify(config, null, 2) + "\n", "utf8");
+  } catch {
+    // Workspace registration is additive convenience. Never make pack installation fail
+    // merely because a workspace file cannot be parsed or written.
+  }
+}
+
 export function projectHubPath(workspaceRoot: string, project: Pick<Project, "path" | "id">): string {
   // A Project Hub belongs to the resolved workspace scope, not to the
   // project's physical parent directory. A workspace may be a multi-root
@@ -19,7 +52,7 @@ export function projectHubPacksPath(workspaceRoot: string, project: Pick<Project
   return path.join(projectHubPath(workspaceRoot, project), "packs");
 }
 
-export function ensureProjectHub(workspaceRoot: string, project: Pick<Project, "path" | "id" | "name">): ProjectHubManifest {
+export function ensureProjectHub(workspaceRoot: string, project: Pick<Project, "path" | "id" | "name">, workspaceFile?: string): ProjectHubManifest {
   const root = projectHubPath(workspaceRoot, project);
   const manifestPath = path.join(root, "hub.json");
   const now = new Date().toISOString();
@@ -55,6 +88,7 @@ export function ensureProjectHub(workspaceRoot: string, project: Pick<Project, "
   fs.mkdirSync(path.join(root, "board", "stories"), { recursive: true });
   fs.mkdirSync(path.join(root, "board", "subtasks"), { recursive: true });
   fs.mkdirSync(path.join(root, "discussions"), { recursive: true });
+  registerProjectHubInWorkspace(workspaceFile, root);
 
   const boardPath = path.join(root, "board", "board.json");
   if (!fs.existsSync(boardPath)) {
@@ -75,8 +109,8 @@ export function ensureProjectHub(workspaceRoot: string, project: Pick<Project, "
   return manifest;
 }
 
-export function registerHubPack(workspaceRoot: string, project: Pick<Project, "path" | "id" | "name">, packName: string, version: string): void {
-  const manifest = ensureProjectHub(workspaceRoot, project);
+export function registerHubPack(workspaceRoot: string, project: Pick<Project, "path" | "id" | "name">, packName: string, version: string, workspaceFile?: string): void {
+  const manifest = ensureProjectHub(workspaceRoot, project, workspaceFile);
   const existing = manifest.packs.find(p => p.id.toLowerCase() === packName.toLowerCase());
   const now = new Date().toISOString();
   if (existing) {

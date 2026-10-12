@@ -361,7 +361,7 @@ if (command === "workspace" && args[1] === "init") {
     const project = workspaceScope ? undefined : workspace.projects.find(p => p.name.toLowerCase() === (args[3] ?? "").toLowerCase());
     if (!pack || (!workspaceScope && !project)) { console.error(`Usage: neo pack ${sub} <pack> <project> | neo pack ${sub} <pack> --workspace`); process.exit(1); }
     const result = sub === "install"
-      ? (workspaceScope ? installWorkspacePack(path.join(packRoot, pack), workspace.root, availablePackRoots) : installProjectPack(path.join(packRoot, pack), project!, workspace.root, projectAvailablePackRoots(project!)))
+      ? (workspaceScope ? installWorkspacePack(path.join(packRoot, pack), workspace.root, availablePackRoots) : installProjectPack(path.join(packRoot, pack), project!, workspace.root, projectAvailablePackRoots(project!), workspace.workspaceFile))
       : (workspaceScope ? removeWorkspacePack(workspace.root, pack) : removeProjectPack(project!, workspace.root, pack));
     console.log(result.message);
     process.exit(result.ok ? 0 : 1);

@@ -32,12 +32,12 @@ function isHubPack(packName: string): boolean {
   return ["project-manager", "solutions-architect"].includes(packName.toLowerCase());
 }
 
-export function installProjectPack(sourcePackPath: string, project: Project, workspaceRoot: string, availablePackRoots: string[] = []): InstallResult {
+export function installProjectPack(sourcePackPath: string, project: Project, workspaceRoot: string, availablePackRoots: string[] = [], workspaceFile?: string): InstallResult {
   const validation = validatePack(sourcePackPath, availablePackRoots);
   if (!validation.valid || !validation.metadata) return { ok: false, message: `Pack validation failed: ${validation.errors.join("; ")}` };
   if (!isHubPack(validation.metadata.name)) return installPack(sourcePackPath, project.path, availablePackRoots);
 
-  ensureProjectHub(workspaceRoot, project);
+  ensureProjectHub(workspaceRoot, project, workspaceFile);
   const hubPacks = projectHubPacksPath(workspaceRoot, project);
   const hubRoot = path.dirname(hubPacks);
   const graph = resolvePackGraph(sourcePackPath, [...availablePackRoots, hubPacks]);
@@ -57,7 +57,7 @@ export function installProjectPack(sourcePackPath: string, project: Project, wor
       const schemaDestination = path.join(hubRoot, "board", "schemas");
       if (fs.existsSync(schemaSource)) fs.cpSync(schemaSource, schemaDestination, { recursive: true, force: true });
     }
-    registerHubPack(workspaceRoot, project, node.pack.name, node.pack.version);
+    registerHubPack(workspaceRoot, project, node.pack.name, node.pack.version, workspaceFile);
     installed.push(`${node.pack.name}@${node.pack.version}`);
   }
 

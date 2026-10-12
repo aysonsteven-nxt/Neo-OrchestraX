@@ -83,7 +83,7 @@ export function executeAiCommand(input: string, workspace: Workspace): AiCommand
         const pack = command.args[0];
         if (!pack) return { ok: false, output: "Usage: /package-install <pack> for <project>", warning: routed.warning };
         const source = path.join(packRoot(workspace), pack);
-        const result = installProjectPack(source, project, workspace.root, roots);
+        const result = installProjectPack(source, project, workspace.root, roots, workspace.workspaceFile);
         output = result.message;
         if (result.installed?.length) output += `\nInstalled:\n${result.installed.map(item => `- ${item}`).join("\n")}`;
         if (!result.ok) return { ok: false, output, warning: routed.warning };
