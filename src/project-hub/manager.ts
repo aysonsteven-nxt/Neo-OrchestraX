@@ -23,8 +23,8 @@ export function registerProjectHubInActiveWorkspace(hubPath: string): WorkspaceR
   const resolvedHub = path.resolve(hubPath);
   try {
     const result = process.platform === "win32"
-      ? spawnSync("code.cmd", ["--add", resolvedHub], { stdio: "ignore", windowsHide: true })
-      : spawnSync("code", ["--add", resolvedHub], { stdio: "ignore" });
+      ? spawnSync("code.cmd", ["--reuse-window", "--add", resolvedHub], { stdio: "ignore", windowsHide: true })
+      : spawnSync("code", ["--reuse-window", "--add", resolvedHub], { stdio: "ignore" });
     if (result.status === 0) return "added";
     if (result.error) return "unavailable";
     return "failed";
@@ -62,12 +62,21 @@ export function registerProjectHubInWorkspace(workspaceFile: string | undefined,
   }
 }
 
-/** Register in the active VS Code window first; fall back to a known workspace file. */
+/**
+ * Register a Project Hub in the resolved workspace.
+ *
+ * If OrchestraX has positively identified the saved `.code-workspace` that
+ * contains the current project, update that file directly. This is more
+ * deterministic than `code --add`, which targets whichever VS Code window
+ * VS Code considers the last active window. For untitled workspaces there is
+ * no file to update, so fall back to VS Code's active-window registration.
+ */
 export function registerProjectHub(workspaceFile: string | undefined, hubPath: string): WorkspaceRegistrationResult {
-  const active = registerProjectHubInActiveWorkspace(hubPath);
-  if (active === "added") return active;
-  const fallback = registerProjectHubInWorkspace(workspaceFile, hubPath);
-  return fallback === "added" || fallback === "already-registered" ? fallback : active;
+  if (workspaceFile) {
+    const known = registerProjectHubInWorkspace(workspaceFile, hubPath);
+    if (known === "added" || known === "already-registered") return known;
+  }
+  return registerProjectHubInActiveWorkspace(hubPath);
 }
 
 export function projectHubPath(workspaceRoot: string, project: Pick<Project, "path" | "id">): string {

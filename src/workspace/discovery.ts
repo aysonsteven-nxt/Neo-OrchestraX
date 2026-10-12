@@ -12,18 +12,69 @@ function stripJsonCommentsAndTrailingCommas(input: string): string {
 function readCodeWorkspace(file: string): CodeWorkspaceFile | undefined {
   try { return JSON.parse(stripJsonCommentsAndTrailingCommas(fs.readFileSync(file, "utf8"))) as CodeWorkspaceFile; } catch { return undefined; }
 }
-function findCodeWorkspaceFile(start: string): string | undefined {
-  let cursor = path.resolve(start);
-  while (true) {
-    try {
-      const candidates = (fs.readdirSync(cursor, { withFileTypes: true }) as DirectoryEntry[])
-        .filter(e => e.isFile() && e.name.endsWith(".code-workspace"))
-        .map(e => path.join(cursor, e.name));
-      if (candidates.length === 1) return candidates[0];
-      if (candidates.length > 1) return candidates.find(c => path.basename(c).startsWith(".sample-workspace")) ?? candidates[0];
-    } catch {}
-    const parent = path.dirname(cursor); if (parent === cursor) break; cursor = parent;
+function isPathWithin(parent: string, child: string): boolean {
+  const p = path.resolve(parent);
+  const c = path.resolve(child);
+  const relative = path.relative(p, c);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+function findCodeWorkspaceFiles(root: string, maxDepth = 2): string[] {
+  const results: string[] = [];
+  const skip = new Set(["node_modules", ".git", ".orchestrax", ".angular", "dist", "build", "out"]);
+
+  function visit(dir: string, depth: number): void {
+    if (depth > maxDepth) return;
+    let entries: DirectoryEntry[];
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }) as DirectoryEntry[]; } catch { return; }
+    for (const entry of entries) {
+      if (entry.isFile() && entry.name.endsWith(".code-workspace")) {
+        results.push(path.join(dir, entry.name));
+      } else if (entry.isDirectory() && !entry.name.startsWith(".") && !skip.has(entry.name)) {
+        visit(path.join(dir, entry.name), depth + 1);
+      }
+    }
   }
+
+  visit(path.resolve(root), 0);
+  return results;
+}
+
+function workspaceContainsPath(workspaceFile: string, target: string): boolean {
+  const roots = getCodeWorkspaceRoots(workspaceFile);
+  return roots.some(root => isPathWithin(root, target));
+}
+
+function findCodeWorkspaceFile(start: string): string | undefined {
+  const resolvedStart = path.resolve(start);
+  let cursor = resolvedStart;
+  const candidates: string[] = [];
+
+  // Prefer a saved multi-root workspace that actually contains the current
+  // project. Do not select an unrelated .code-workspace merely because it
+  // happens to live in a parent directory.
+  while (true) {
+    candidates.push(...findCodeWorkspaceFiles(cursor, cursor === resolvedStart ? 1 : 0));
+    const parent = path.dirname(cursor);
+    if (parent === cursor) break;
+    cursor = parent;
+  }
+
+  const unique = [...new Set(candidates)];
+  const matching = unique.filter(file => workspaceContainsPath(file, resolvedStart));
+  if (matching.length === 1) return matching[0];
+  if (matching.length > 1) {
+    // Prefer the workspace whose file directory is closest to the project.
+    return matching.sort((a, b) => {
+      const aDepth = path.relative(path.dirname(a), resolvedStart).split(path.sep).filter(Boolean).length;
+      const bDepth = path.relative(path.dirname(b), resolvedStart).split(path.sep).filter(Boolean).length;
+      return aDepth - bDepth;
+    })[0];
+  }
+
+  // If no saved workspace contains the project, leave the file unresolved.
+  // Project Hub registration can still use VS Code's active-window `--add`
+  // mechanism, which also works for untitled workspaces.
   return undefined;
 }
 export function getCodeWorkspaceRoots(workspaceFile: string): string[] {
