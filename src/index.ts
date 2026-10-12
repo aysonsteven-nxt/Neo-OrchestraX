@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -29,6 +30,10 @@ import type { Project, Workspace } from "./workspace/types.js";
 import { isOrchestraXDirectory, isProjectDirectory, locateOrchestraX } from "./workspace/discovery.js";
 import { initWorkspace, initProject, workspaceConfigPath, projectConfigPath, readWorkspaceConfig } from "./workspace/config.js";
 export type { Project, Workspace } from "./workspace/types.js";
+
+const installationRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const packageMetadata = JSON.parse(fs.readFileSync(path.join(installationRoot, "package.json"), "utf8")) as { version?: string };
+const CLI_VERSION = packageMetadata.version ?? "0.0.0";
 
 interface DirectoryEntry {
   name: string;
@@ -78,7 +83,7 @@ export function discoverWorkspace(root: string, installationRoot: string = path.
 
 function help(): void {
   console.log(`
-Neo OrchestraX v0.15.0
+Neo OrchestraX v${CLI_VERSION}
 
 Workspace:
   neo workspace init [path]
@@ -166,9 +171,12 @@ Diagnostic bridge (secondary CLI interface):
 
 const args = process.argv.slice(2);
 const command = args[0];
-if (!command || command === "help" || command === "--help") { help(); process.exit(0); }
+if (command === "--version" || command === "-v" || command === "version") {
+  console.log(`Neo OrchestraX v${CLI_VERSION}`);
+  process.exit(0);
+}
+if (!command || command === "help" || command === "--help" || command === "-h") { help(); process.exit(0); }
 
-const installationRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const workspace = discoverWorkspace(process.cwd(), installationRoot);
 const packRoot = path.join(workspace.orchestraxRoot, "packs");
 const workspacePackRoot = path.join(workspace.root, ".orchestrax", "packs");
@@ -187,7 +195,7 @@ if (command === "workspace" && args[1] === "init") {
   console.log(`Initialized Neo OrchestraX project: ${target}`);
   console.log("Created: .orchestrax/packs/, .orchestrax/syntra/");
 } else if (command === "status" || args.join(" ") === "workspace status") {
-  console.log("Neo OrchestraX v0.15.0");
+  console.log(`Neo OrchestraX v${CLI_VERSION}`);
   console.log(`Workspace: ${workspace.root}`);
   console.log(`OrchestraX installation: ${workspace.installationRoot}`);
   console.log(`Scope: ${workspace.scope}`);

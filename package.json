@@ -1,6 +1,6 @@
 {
   "name": "neo-orchestrax",
-  "version": "0.15.0",
+  "version": "0.15.1",
   "private": true,
   "description": "Neo OrchestraX - AI development orchestration foundation",
   "type": "module",
@@ -13,5 +13,8 @@
     "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0"
+  },
+  "bin": {
+    "neo": "dist/index.js"
   }
 }
