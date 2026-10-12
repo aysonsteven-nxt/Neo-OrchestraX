@@ -18,6 +18,7 @@ export interface ProviderContext {
   };
   installedPacks: string[];
   instructions: Array<{ id: string; version: string; category: string; source: string; required: boolean; content: string }>;
+  agents: Array<{ id: string; version: string; role: string; source: string; capabilities: string[]; content: string; requiredInstructions: Array<{ id: string; version: string; required: boolean; available: boolean }> }>;
   syntra: Array<{ title: string; content: string; category: string; status: string }>;
   latestHandoff?: {
     title: string;

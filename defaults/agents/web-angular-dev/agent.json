@@ -1,0 +1,44 @@
+{
+  "id": "web-angular-dev",
+  "version": "1.0.0",
+  "description": "Angular and TypeScript web development agent.",
+  "role": "Angular web development",
+  "capabilities": [
+    "angular",
+    "typescript",
+    "frontend",
+    "angular-testing"
+  ],
+  "appliesTo": [
+    "angular"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/coding-standards",
+      "version": "^1.0.0",
+      "required": true
+    },
+    {
+      "id": "common/testing",
+      "version": "^1.0.0",
+      "required": true
+    },
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": false
+    },
+    {
+      "id": "common/git-workflow",
+      "version": "^1.0.0",
+      "required": false
+    },
+    {
+      "id": "web-angular/angular-standards",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

@@ -52,6 +52,15 @@ export function analyzeProject(project: Project): ProjectProfile {
   if (files.some(f => /\.tsx$/.test(f))) {
     add("typescript-react", "framework", "React/TypeScript", "TSX source files detected");
   }
+  if (files.some(f => /\.(js|mjs|cjs)$/.test(f))) {
+    add("javascript", "language", "JavaScript", "JavaScript source files detected");
+  }
+  if (files.some(f => /\.html?$/.test(f))) {
+    add("html", "framework", "HTML", "HTML source files detected");
+  }
+  if (files.some(f => /\.css$/.test(f))) {
+    add("css", "framework", "CSS", "CSS source files detected");
+  }
 
   if (exists(root, "AndroidManifest.xml") ||
       files.some(f => f.endsWith("src/main/AndroidManifest.xml"))) {

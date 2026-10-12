@@ -22,7 +22,9 @@ const supported = new Set([
   "handoff",
   "resume",
   "provider-sync",
-  "instructions"
+  "instructions",
+  "agents",
+  "agent"
 ]);
 
 export function routeCommand(input: string, projects: Project[]): CommandResult {

@@ -1,6 +1,6 @@
 # Neo OrchestraX
 
-**Version 0.10.0**
+**Version 0.11.0**
 
 V0.9 establishes provider adapters and provider-specific project artifacts while keeping OrchestraX canonical context provider-neutral.
 
@@ -49,3 +49,19 @@ Default → User → Workspace → Project → Effective Rails → Provider Adap
 ```
 
 The common security baseline is non-overrideable. Other defaults can be extended or replaced when explicitly configured as overrideable.
+
+## V0.11 Agents
+
+Agents are role-oriented components layered on top of the effective V0.10 rails. OrchestraX ships with `java-dev`, `android-dev`, `web-angular-dev`, and `web-vanilla-dev`. Agents declare instruction dependencies rather than duplicating the rails. User, workspace, and project agent definitions can be layered and resolved similarly to instructions.
+
+```text
+Default Rails → Effective Rails → Agent → Provider Adapter
+```
+
+AI-facing commands:
+
+```text
+@agents
+@agents for MoneyMap
+@agent java-dev for MoneyMap
+```

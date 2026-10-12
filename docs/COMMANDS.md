@@ -10,11 +10,12 @@ AI-facing commands are handled by Neo OrchestraX:
 @handoff
 @handoff for MoneyMap
 @resume
-@resume for MoneyMap
+@instructions for MoneyMap
+@agents for MoneyMap
+@agent android-dev for MoneyMap
 ```
 
 Syntra is internal and has no `@syntra` command.
-
 
 Provider integration:
 

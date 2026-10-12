@@ -14,12 +14,14 @@ function canonical(project: { name: string }, context: ProviderContext): string 
   const instructionSection = instructions
     ? `\n## Effective OrchestraX Rails / Instructions\n${instructions}\n`
     : "";
+  const agents = context.agents.map(a => `### ${a.id} @ ${a.version} (${a.role})\n${a.content}\n\nCapabilities: ${a.capabilities.join(", ") || "none"}\n\nInstruction dependencies:\n${a.requiredInstructions.map(d => `- ${d.id} @ ${d.version} (${d.required ? "required" : "optional"}${d.available ? ", available" : ", missing"})`).join("\n")}`).join("\n\n");
+  const agentSection = agents ? `\n## Applicable OrchestraX Agents\n${agents}\n` : "";
 
   const handoff = context.latestHandoff
     ? `\n## Current continuity\n- Handoff: ${context.latestHandoff.title}\n- Objective: ${context.latestHandoff.objective}${context.latestHandoff.nextAction ? `\n- Next action: ${context.latestHandoff.nextAction}` : ""}\n`
     : "";
 
-  return `${header}\n# Neo OrchestraX — ${project.name}\n\nUse Neo OrchestraX project context when working on this project. Prefer confirmed project knowledge and current task/handoff state over assumptions. Do not treat inferred or draft information as authoritative.\n\n## Technology signals\n${signals.length ? signals.join("\n") : "- No project signals detected."}\n${instructionSection}\n## Installed OrchestraX packs\n${context.installedPacks.length ? context.installedPacks.map(p => `- ${p}`).join("\n") : "- None detected."}\n\n## Relevant Syntra knowledge\n${syntra.length ? syntra.join("\n") : "- No confirmed/review knowledge available."}\n${handoff}`;
+  return `${header}\n# Neo OrchestraX — ${project.name}\n\nUse Neo OrchestraX project context when working on this project. Prefer confirmed project knowledge and current task/handoff state over assumptions. Do not treat inferred or draft information as authoritative.\n\n## Technology signals\n${signals.length ? signals.join("\n") : "- No project signals detected."}\n${instructionSection}${agentSection}\n## Installed OrchestraX packs\n${context.installedPacks.length ? context.installedPacks.map(p => `- ${p}`).join("\n") : "- None detected."}\n\n## Relevant Syntra knowledge\n${syntra.length ? syntra.join("\n") : "- No confirmed/review knowledge available."}\n${handoff}`;
 }
 
 function adapter(id: "copilot" | "gemini" | "claude" | "cursor", name: string, description: string, paths: (ctx: string) => ProviderArtifact[]): ProviderAdapter {

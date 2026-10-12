@@ -1,0 +1,49 @@
+{
+  "id": "web-vanilla-dev",
+  "version": "1.0.0",
+  "description": "Vanilla web development agent for HTML, CSS and JavaScript/TypeScript.",
+  "role": "Vanilla web development",
+  "capabilities": [
+    "html",
+    "css",
+    "javascript",
+    "typescript",
+    "web"
+  ],
+  "appliesTo": [
+    "web",
+    "html",
+    "css",
+    "javascript",
+    "web-vanilla"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/coding-standards",
+      "version": "^1.0.0",
+      "required": true
+    },
+    {
+      "id": "common/testing",
+      "version": "^1.0.0",
+      "required": true
+    },
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": false
+    },
+    {
+      "id": "common/git-workflow",
+      "version": "^1.0.0",
+      "required": false
+    },
+    {
+      "id": "web-vanilla/web-standards",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

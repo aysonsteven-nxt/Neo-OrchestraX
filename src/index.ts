@@ -17,6 +17,8 @@ import { formatHandoff } from "./handoff/formatter.js";
 import { listProviders, syncProvider, syncAllProviders } from "./providers/manager.js";
 import { defaultInstructionsRoot, userInstructionsRoot, workspaceInstructionsRoot, projectInstructionsRoot, listInstructionDirectories, validateInstructionDirectory } from "./instructions/registry.js";
 import { findInstruction, resolveInstructions } from "./instructions/resolver.js";
+import { findAgent, resolveAgents } from "./agents/resolver.js";
+import { validateAgentDirectory } from "./agents/registry.js";
 
 export interface Project { id: string; name: string; path: string; }
 export interface Workspace { root: string; projects: Project[]; }
@@ -40,7 +42,7 @@ export function discoverWorkspace(root: string): Workspace {
 
 function help(): void {
   console.log(`
-Neo OrchestraX v0.10.0
+Neo OrchestraX v0.11.0
 
 Workspace:
   neo workspace status
@@ -76,6 +78,12 @@ Instructions / Rails:
   neo instruction effective <project>
   neo instruction validate <path>
 
+Agents:
+  neo agent list <project>
+  neo agent show <project> <agent-id>
+  neo agent effective <project>
+  neo agent validate <path>
+
 Syntra diagnostics:
   neo syntra init <project>
   neo syntra list <project>
@@ -92,6 +100,9 @@ AI-facing commands are routed through Neo OrchestraX:
   @provider-sync copilot for MoneyMap
   @instructions
   @instructions for MoneyMap
+  @agents
+  @agents for MoneyMap
+  @agent java-dev for MoneyMap
 `);
 }
 
@@ -103,7 +114,7 @@ const workspace = discoverWorkspace(process.cwd());
 const packRoot = path.join(workspace.root, "neo-orchestrax", "packs");
 
 if (command === "status" || args.join(" ") === "workspace status") {
-  console.log("Neo OrchestraX v0.10.0");
+  console.log("Neo OrchestraX v0.11.0");
   console.log(`Workspace: ${workspace.root}`);
   console.log(`Projects: ${workspace.projects.length}`);
   workspace.projects.forEach(p => console.log(`  - ${p.name} (${p.id})`));
@@ -247,6 +258,14 @@ if (command === "status" || args.join(" ") === "workspace status") {
   } else {
     console.error("Unknown instruction command."); process.exit(1);
   }
+} else if (command === "agent") {
+  const sub=args[1];
+  if(sub==="validate"){const target=path.resolve(args[2]??"");const errors=validateAgentDirectory(target);console.log(errors.length?`Invalid: ${errors.join("; ")}`:`Valid agent: ${target}`);process.exit(errors.length?1:0);}
+  const project=workspace.projects.find(p=>p.name.toLowerCase()===(args[2]??"").toLowerCase()); if(!project){console.error("Project not found.");process.exit(1);}
+  const resolution=resolveAgents(path.join(workspace.root,"neo-orchestrax"),workspace.root,project);
+  if(sub==="list"||sub==="effective"){console.log(`Applicable OrchestraX Agents: ${project.name}`);resolution.agents.forEach(a=>console.log(`${a.id}@${a.version} | ${a.source} | ${a.role} | ${a.capabilities.join(", ")}`));if(resolution.conflicts.length){console.log("\nResolution notes:");resolution.conflicts.forEach(c=>console.log(`  ! ${c}`));}}
+  else if(sub==="show"){const id=args[3];if(!id){console.error("Usage: neo agent show <project> <agent-id>");process.exit(1);}const agent=findAgent(resolution,id);if(!agent){console.error(`Agent not found: ${id}`);process.exit(1);}console.log(`# ${agent.id}`);console.log(`Version: ${agent.version}`);console.log(`Source: ${agent.source}`);console.log(`Role: ${agent.role}`);console.log(`Capabilities: ${agent.capabilities.join(", ")||"none"}`);console.log("\nInstruction dependencies:");agent.resolvedInstructions.forEach(d=>console.log(`- ${d.id} @ ${d.version} | ${d.required?"required":"optional"} | ${d.available?`available (${d.source})`:"missing"}`));console.log(`\n${agent.content}`);}
+  else {console.error("Unknown agent command.");process.exit(1);}
 } else if (command === "syntra") {
   const sub = args[1];
   const project = workspace.projects.find(p => p.name.toLowerCase() === (args[2] ?? "").toLowerCase());
@@ -299,6 +318,25 @@ if (command === "status" || args.join(" ") === "workspace status") {
     } else {
       console.log(`Effective OrchestraX Rails: ${project.name}`);
       resolution.instructions.forEach(i => console.log(`- ${i.id}@${i.version} [${i.source}${i.required ? ", required" : ""}]`));
+      if (resolution.conflicts.length) resolution.conflicts.forEach(c => console.log(`! ${c}`));
+    }
+  } else if (result.command.name === "agents" || result.command.name === "agent") {
+    const resolution = resolveAgents(path.join(workspace.root, "neo-orchestrax"), workspace.root, project);
+    const requestedId = result.command.args[0];
+    if (requestedId) {
+      const agent = findAgent(resolution, requestedId);
+      if (!agent) { console.error(`Agent not found: ${requestedId}`); process.exit(1); }
+      console.log(`# ${agent.id}`);
+      console.log(`Version: ${agent.version}`);
+      console.log(`Role: ${agent.role}`);
+      console.log(`Source: ${agent.source}`);
+      console.log(`Capabilities: ${agent.capabilities.join(", ") || "none"}`);
+      console.log("\nInstruction dependencies:");
+      agent.resolvedInstructions.forEach(d => console.log(`- ${d.id} @ ${d.version} | ${d.required ? "required" : "optional"} | ${d.available ? `available (${d.source})` : "missing"}`));
+      console.log(`\n${agent.content}`);
+    } else {
+      console.log(`Applicable OrchestraX Agents: ${project.name}`);
+      resolution.agents.forEach(a => console.log(`- ${a.id}@${a.version} [${a.source}] — ${a.role}`));
       if (resolution.conflicts.length) resolution.conflicts.forEach(c => console.log(`! ${c}`));
     }
   } else if (result.command.name === "provider-sync") {

@@ -1,0 +1,47 @@
+{
+  "id": "android-dev",
+  "version": "1.0.0",
+  "description": "Native Android and Kotlin development agent.",
+  "role": "Android/Kotlin development",
+  "capabilities": [
+    "android",
+    "kotlin",
+    "jetpack-compose",
+    "android-testing"
+  ],
+  "appliesTo": [
+    "android",
+    "kotlin",
+    "gradle",
+    "jetpack-compose"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/coding-standards",
+      "version": "^1.0.0",
+      "required": true
+    },
+    {
+      "id": "common/testing",
+      "version": "^1.0.0",
+      "required": true
+    },
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": false
+    },
+    {
+      "id": "common/git-workflow",
+      "version": "^1.0.0",
+      "required": false
+    },
+    {
+      "id": "android/kotlin-standards",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

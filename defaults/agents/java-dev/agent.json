@@ -1,0 +1,46 @@
+{
+  "id": "java-dev",
+  "version": "1.0.0",
+  "description": "Java 21 and Spring Boot development agent.",
+  "role": "Java development",
+  "capabilities": [
+    "java",
+    "spring-boot",
+    "api-development",
+    "java-testing"
+  ],
+  "appliesTo": [
+    "java",
+    "spring-boot",
+    "maven"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/coding-standards",
+      "version": "^1.0.0",
+      "required": true
+    },
+    {
+      "id": "common/testing",
+      "version": "^1.0.0",
+      "required": true
+    },
+    {
+      "id": "common/documentation",
+      "version": "^1.0.0",
+      "required": false
+    },
+    {
+      "id": "common/git-workflow",
+      "version": "^1.0.0",
+      "required": false
+    },
+    {
+      "id": "java/coding-standards",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}
