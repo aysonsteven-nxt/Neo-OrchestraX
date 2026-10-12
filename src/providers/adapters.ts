@@ -45,12 +45,14 @@ function adapter(
   description: string,
   capabilities: ProviderCapabilities,
   paths: (ctx: string) => ProviderArtifact[],
-  projectCommands: (commands: AiCommandDefinition[]) => ProviderCommandProjection[]
+  projectCommands: (commands: AiCommandDefinition[]) => ProviderCommandProjection[],
+  generateCommandArtifacts: (commands: AiCommandDefinition[]) => ProviderArtifact[]
 ): ProviderAdapter {
   return {
     id, name, description, capabilities,
     generate: (project, context) => paths(canonical(project, context)),
-    projectCommands
+    projectCommands,
+    generateCommandArtifacts
   };
 }
 
@@ -64,7 +66,11 @@ export const providers: ProviderAdapter[] = [
       { relativePath: ".github/copilot-instructions.md", content: ctx },
       { relativePath: ".github/agents/orchestrax-context.agent.md", content: `${header}\n---\ndescription: Neo OrchestraX project context\n---\n\n${ctx}` }
     ],
-    commandProjection("adapter-defined", undefined, "The adapter defines the provider-native exposure; the canonical command remains provider-neutral.")
+    commandProjection("projected", "/<command>", "Projected through the Copilot Agent Plugin command surface."),
+    commands => commands.map(command => ({
+      relativePath: `providers/copilot/plugin/com.github.copilot/commands/${command.id}.md`,
+      content: `---\ndescription: ${command.description}\nargument-hint: ${command.argumentHint ?? ""}\n---\n\n# Neo OrchestraX /${command.id}\n\nThis is the Copilot projection of the provider-neutral Neo OrchestraX AI command \`/${command.id}\`.\n\nUsage: \`${command.usage}\`\n\n${command.prompt}\n\nRoute the requested operation through the Neo OrchestraX command engine. Preserve explicit project targeting and do not substitute a different command name.`
+    }))
   ),
   adapter(
     "gemini",
@@ -72,7 +78,8 @@ export const providers: ProviderAdapter[] = [
     "Gemini project guidance and shared project context.",
     { context: true, instructions: true, agents: true, skills: true, aiCommands: "adapter-defined" },
     ctx => [{ relativePath: "GEMINI.md", content: ctx }],
-    commandProjection("adapter-defined", undefined, "Provider-native command projection is adapter-defined.")
+    commandProjection("adapter-defined", undefined, "Provider-native command projection is adapter-defined."),
+    () => []
   ),
   adapter(
     "claude",
@@ -83,7 +90,8 @@ export const providers: ProviderAdapter[] = [
       { relativePath: ".claude/CLAUDE.md", content: ctx },
       { relativePath: ".claude/agents/orchestrax-context.md", content: `${header}\n\n${ctx}` }
     ],
-    commandProjection("adapter-defined", undefined, "Provider-native command projection is adapter-defined.")
+    commandProjection("adapter-defined", undefined, "Provider-native command projection is adapter-defined."),
+    () => []
   ),
   adapter(
     "cursor",
@@ -91,7 +99,8 @@ export const providers: ProviderAdapter[] = [
     "Cursor project rules and shared project context.",
     { context: true, instructions: true, agents: true, skills: true, aiCommands: "adapter-defined" },
     ctx => [{ relativePath: ".cursor/rules/orchestrax-context.mdc", content: `${header}\ndescription: Neo OrchestraX project context\nalwaysApply: true\n\n${ctx}` }],
-    commandProjection("adapter-defined", undefined, "Provider-native command projection is adapter-defined.")
+    commandProjection("adapter-defined", undefined, "Provider-native command projection is adapter-defined."),
+    () => []
   )
 ];
 

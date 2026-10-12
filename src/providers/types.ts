@@ -35,6 +35,7 @@ export interface ProviderAdapter {
   capabilities: ProviderCapabilities;
   generate(project: { id: string; name: string; path: string }, context: ProviderContext): ProviderArtifact[];
   projectCommands(commands: AiCommandDefinition[]): ProviderCommandProjection[];
+  generateCommandArtifacts(commands: AiCommandDefinition[]): ProviderArtifact[];
 }
 
 export interface ProviderContext {
