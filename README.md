@@ -1,51 +1,49 @@
 # Neo OrchestraX
 
-**Version 0.4.0**
+**Version 0.5.0**
 
-Neo OrchestraX is an AI development orchestration platform designed around a workspace containing the orchestration system and one or more projects.
+Neo OrchestraX is an AI development orchestration platform for workspace-based AI-assisted software development.
 
-## V0.4.0 — Intelligent Pack Selector
+## V0.5.0 — Syntra
 
-V0.4 introduces:
+**Syntra** is the internal persistent project-intelligence and context storage subsystem.
 
-- deterministic project analysis
-- Project Profile
-- technology/framework/dependency signals
-- Pack capability matching
-- Pack recommendations
-- relevance scores with evidence
+It stores structured information such as:
 
-CLI:
+- project knowledge
+- architecture
+- decisions
+- requirements
+- constraints
+- known problems
+- work state
 
-```text
-neo analyze MoneyMap
-neo pack recommend MoneyMap
-```
+Each entry includes provenance, confidence and governance status.
 
-AI-facing command:
+### Important boundary
 
-```text
-@package-selector
-@package-selector for MoneyMap
-```
+The developer talks to **Neo OrchestraX**, not Syntra.
 
-Example output:
+Use:
 
 ```text
-Project Analysis: MoneyMap
-✓ Android
-✓ Kotlin
-✓ Jetpack Compose
-✓ Gradle
-✓ Room
-✓ Hilt
-
-Pack Recommendations:
-android-kotlin-dev  100%
-solutions-architect 80%
-project-manager      70%
+@context
+@context for MoneyMap
 ```
 
-Scores represent technical relevance/match, not quality.
+Not:
 
-Syntra remains an internal subsystem and is not exposed as a command.
+```text
+@syntra
+```
+
+Project-local storage:
+
+```text
+MoneyMap/
+└── .orchestrax/
+    └── syntra/
+        └── entries.json
+```
+
+The existing `neo-devkit` prototype remains untouched.

@@ -1,6 +1,6 @@
 {
   "name": "neo-orchestrax",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "description": "Neo OrchestraX - AI development orchestration foundation",
   "type": "module",
