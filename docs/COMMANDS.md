@@ -1,27 +1,16 @@
-# OrchestraX Command Model
+# Commands
 
-## Single project
+AI-facing commands are handled by Neo OrchestraX:
 
 ```text
 @package-selector
-@package-install <package>
-@context
-@task start "<objective>"
+@package-install android-kotlin-dev for MoneyMap
+@context for MoneyMap
+@task start "Transaction history" for MoneyMap
 @handoff
+@handoff for MoneyMap
 @resume
+@resume for MoneyMap
 ```
 
-## Multiple projects
-
-```text
-@package-selector for <project>
-@package-install <package> for <project>
-@context for <project>
-@task start "<objective>" for <project>
-@handoff for <project>
-@resume for <project>
-```
-
-The project qualifier is optional whenever OrchestraX can resolve the target unambiguously.
-
-The user interacts with Neo OrchestraX. Syntra is internal.
+Syntra is internal and has no `@syntra` command.

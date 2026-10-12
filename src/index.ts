@@ -12,6 +12,8 @@ import { resolveContext } from "./context/resolver.js";
 import { formatContext } from "./context/formatter.js";
 import { createTask, listTasks, getTask, changeTaskStatus } from "./tasks/manager.js";
 import { resolveTaskContext } from "./tasks/context.js";
+import { createHandoff, getHandoff, getLatestHandoff, listHandoffs } from "./handoff/manager.js";
+import { formatHandoff } from "./handoff/formatter.js";
 
 export interface Project { id: string; name: string; path: string; }
 export interface Workspace { root: string; projects: Project[]; }
@@ -35,7 +37,7 @@ export function discoverWorkspace(root: string): Workspace {
 
 function help(): void {
   console.log(`
-Neo OrchestraX v0.5.0
+Neo OrchestraX v0.8.0
 
 Workspace:
   neo workspace status
@@ -55,6 +57,11 @@ Packs:
   neo task show <project> <task-id>
   neo task status <project> <task-id> <status>
   neo task context <project> <task-id>
+  neo handoff create <project> [task-id]
+  neo handoff list <project>
+  neo handoff show <project> <handoff-id>
+  neo handoff latest <project>
+  neo resume <project>
 
 Syntra diagnostics:
   neo syntra init <project>
@@ -62,6 +69,12 @@ Syntra diagnostics:
   neo syntra search <project> "<query>"
   neo syntra add <project> "<title>" "<content>" <category>
   neo syntra status <project> <entry-id> <status>
+
+AI-facing commands are routed through Neo OrchestraX:
+  @handoff
+  @handoff for MoneyMap
+  @resume
+  @resume for MoneyMap
 `);
 }
 
@@ -73,7 +86,7 @@ const workspace = discoverWorkspace(process.cwd());
 const packRoot = path.join(workspace.root, "neo-orchestrax", "packs");
 
 if (command === "status" || args.join(" ") === "workspace status") {
-  console.log("Neo OrchestraX v0.5.0");
+  console.log("Neo OrchestraX v0.8.0");
   console.log(`Workspace: ${workspace.root}`);
   console.log(`Projects: ${workspace.projects.length}`);
   workspace.projects.forEach(p => console.log(`  - ${p.name} (${p.id})`));
@@ -98,6 +111,38 @@ if (command === "status" || args.join(" ") === "workspace status") {
   else if(sub==="status"){const t=changeTaskStatus(project.path,args[3],args[4] as any);if(!t){console.error("Task not found.");process.exit(1)}console.log(`Updated ${t.id} → ${t.status}`)}
   else if(sub==="context"){const t=getTask(project.path,args[3]);if(!t){console.error("Task not found.");process.exit(1)}console.log(formatContext(resolveTaskContext(project,t).context))}
   else {console.error("Unknown task command.");process.exit(1)}
+} else if (command === "handoff") {
+  const sub = args[1];
+  const project = workspace.projects.find(p => p.name.toLowerCase() === (args[2] ?? "").toLowerCase());
+  if (!project) { console.error("Project not found."); process.exit(1); }
+
+  if (sub === "create") {
+    const requestedTaskId = args[3];
+    const task = requestedTaskId
+      ? getTask(project.path, requestedTaskId)
+      : listTasks(project.path).filter(t => ["in-progress", "blocked", "planned"].includes(t.status)).sort((a,b) => b.updatedAt.localeCompare(a.updatedAt))[0];
+    if (requestedTaskId && !task) { console.error("Task not found."); process.exit(1); }
+    const h = createHandoff(project.path, { projectId: project.id, task });
+    console.log(formatHandoff(h));
+  } else if (sub === "list") {
+    listHandoffs(project.path).sort((a,b) => b.createdAt.localeCompare(a.createdAt)).forEach(h =>
+      console.log(`${h.id} | ${h.createdAt} | ${h.title}`));
+  } else if (sub === "show") {
+    const h = getHandoff(project.path, args[3]);
+    if (!h) { console.error("Handoff not found."); process.exit(1); }
+    console.log(formatHandoff(h));
+  } else if (sub === "latest") {
+    const h = getLatestHandoff(project.path);
+    if (!h) { console.error("No handoff found."); process.exit(1); }
+    console.log(formatHandoff(h));
+  } else { console.error("Unknown handoff command."); process.exit(1); }
+} else if (command === "resume") {
+  const project = workspace.projects.find(p => p.name.toLowerCase() === (args[1] ?? "").toLowerCase());
+  if (!project) { console.error("Project not found."); process.exit(1); }
+  const h = args[2] ? getHandoff(project.path, args[2]) : getLatestHandoff(project.path);
+  if (!h) { console.error("No handoff found to resume."); process.exit(1); }
+  console.log(`Resume: ${project.name}`);
+  console.log(formatHandoff(h));
 } else if (command === "analyze" || (command === "pack" && args[1] === "recommend")) {
   const projectName = command === "analyze" ? args[1] : args[2];
   const project = workspace.projects.find(p => p.name.toLowerCase() === (projectName ?? "").toLowerCase());
@@ -165,9 +210,27 @@ if (command === "status" || args.join(" ") === "workspace status") {
   const input = args.slice(1).join(" ").trim();
   if (!input) { console.error("Missing OrchestraX command."); process.exit(1); }
   const result = routeCommand(input, workspace.projects);
-  console.log(result.message);
-  result.candidates?.forEach(p => console.log(`  - ${p.name}`));
-  process.exit(result.ok ? 0 : 2);
+  if (!result.ok) {
+    console.log(result.message);
+    result.candidates?.forEach(p => console.log(`  - ${p.name}`));
+    process.exit(2);
+  }
+
+  const project = result.project!;
+  if (result.command.name === "handoff") {
+    const tasks = listTasks(project.path);
+    const task = tasks.filter(t => ["in-progress", "blocked", "planned"].includes(t.status))
+      .sort((a,b) => b.updatedAt.localeCompare(a.updatedAt))[0];
+    const handoff = createHandoff(project.path, { projectId: project.id, task });
+    console.log(formatHandoff(handoff));
+  } else if (result.command.name === "resume") {
+    const handoff = getLatestHandoff(project.path);
+    if (!handoff) { console.error(`No handoff found for ${project.name}.`); process.exit(1); }
+    console.log(formatHandoff(handoff));
+  } else {
+    console.log(result.message);
+  }
+  process.exit(0);
 } else {
   console.error(`Unknown CLI command: ${args.join(" ")}`);
   process.exit(1);
