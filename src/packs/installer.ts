@@ -4,6 +4,7 @@ import { validatePack } from "./validator.js";
 import { resolvePackGraph } from "./resolver.js";
 import { ensureProjectHub, listHubInstalled, projectHubPacksPath, registerHubPack, unregisterHubPack } from "../project-hub/manager.js";
 import type { Project } from "../workspace/types.js";
+import { installProjectBoard } from "../project-board.js";
 
 export interface InstallResult { ok: boolean; message: string; installed?: string[]; }
 
@@ -80,12 +81,21 @@ export function installProjectPack(sourcePackPath: string, project: Project, wor
     }
   }
 
+  let boardMessage = "";
+  if (installed.some(value => value.toLowerCase().startsWith("project-manager@"))) {
+    const boardResult = installProjectBoard(workspaceRoot, project);
+    if (!boardResult.valid) {
+      return { ok: false, message: `Project Manager was installed, but Neo Project Board provisioning failed: ${boardResult.message}`, installed };
+    }
+    boardMessage = ` Neo Project Board ${boardResult.version ?? ""} provisioned with npm install.`;
+  }
+
   const registrationNote = hubManifest.workspaceRegistration === "added"
     ? " and registered it in the active VS Code workspace"
     : hubManifest.workspaceRegistration === "already-registered"
       ? " (already registered in the workspace)"
       : " (workspace registration unavailable)";
-  return { ok: true, message: `Installed ${validation.metadata.name}@${validation.metadata.version} to Project Hub ${path.basename(hubRoot)}${registrationNote}${installed.length > 1 ? ` with ${installed.length - 1} dependency pack(s)` : ""}`, installed };
+  return { ok: true, message: `Installed ${validation.metadata.name}@${validation.metadata.version} to Project Hub ${path.basename(hubRoot)}${registrationNote}${installed.length > 1 ? ` with ${installed.length - 1} dependency pack(s)` : ""}.${boardMessage}`, installed };
 }
 
 export function installPack(sourcePackPath: string, projectPath: string, availablePackRoots: string[] = []): InstallResult {
