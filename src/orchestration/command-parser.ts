@@ -7,10 +7,13 @@ export interface ParsedCommand {
 
 export function parseCommand(input: string): ParsedCommand {
   const raw = input.trim();
-  const match = raw.match(/^@(\S+)(?:\s+([\s\S]*))?$/);
+  // Slash is the canonical OrchestraX user-facing syntax.
+  // @ remains accepted as a backwards-compatible parser alias for older
+  // OrchestraX sessions, but it is no longer documented as the primary UX.
+  const match = raw.match(/^[/@](\S+)(?:\s+([\s\S]*))?$/);
 
   if (!match) {
-    throw new Error("Invalid OrchestraX command. Commands must start with @.");
+    throw new Error("Invalid OrchestraX command. Commands must start with /.");
   }
 
   const name = match[1];
@@ -18,7 +21,7 @@ export function parseCommand(input: string): ParsedCommand {
   let project: string | undefined;
 
   // Project targeting uses the canonical:
-  // @command ... for <project>
+  // /command ... for <project>
   const projectMatch = remainder.match(/(?:^|\s+)for\s+(.+)$/i);
   if (projectMatch) {
     project = projectMatch[1].trim();

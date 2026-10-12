@@ -37,7 +37,7 @@ export function routeCommand(input: string, projects: Project[]): CommandResult 
     return {
       ok: false,
       command,
-      message: `Unknown OrchestraX command: @${command.name}`
+      message: `Unknown OrchestraX command: /${command.name}`
     };
   }
 
@@ -48,7 +48,7 @@ export function routeCommand(input: string, projects: Project[]): CommandResult 
       ok: true,
       command,
       project: resolution.project,
-      message: `@${command.name} → ${resolution.project?.name}`
+      message: `/${command.name} → ${resolution.project?.name}`
     };
   }
 
