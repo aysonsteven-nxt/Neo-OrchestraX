@@ -24,3 +24,10 @@ Provider integration:
 @provider-sync for MoneyMap
 @provider-sync copilot for MoneyMap
 ```
+
+## Skills
+
+- `@skills` — show effective skills
+- `@skill <id>` — show a specific skill
+- `@skills for <project>` — target a project
+- `@skill <id> for <project>` — target a project

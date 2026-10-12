@@ -1,0 +1,28 @@
+{
+  "id": "android-testing",
+  "version": "1.0.0",
+  "description": "Reusable Android testing capability.",
+  "category": "testing",
+  "capabilities": [
+    "android-testing",
+    "unit-testing",
+    "ui-testing"
+  ],
+  "appliesToAgents": [
+    "android-dev"
+  ],
+  "appliesTo": [
+    "android",
+    "kotlin",
+    "gradle"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/coding-standards",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

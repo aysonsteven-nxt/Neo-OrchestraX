@@ -34,11 +34,28 @@
       "required": false
     },
     {
-      "id": "web-angular/angular-standards",
+      "id": "web-angular/standards",
       "version": "^1.0.0",
       "required": true
     }
   ],
   "overrideable": true,
-  "priority": 0
+  "priority": 0,
+  "skills": [
+    {
+      "id": "angular-development",
+      "version": "^1.0.0",
+      "required": true
+    },
+    {
+      "id": "typescript-development",
+      "version": "^1.0.0",
+      "required": true
+    },
+    {
+      "id": "angular-testing",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ]
 }

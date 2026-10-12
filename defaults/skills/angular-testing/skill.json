@@ -1,0 +1,26 @@
+{
+  "id": "angular-testing",
+  "version": "1.0.0",
+  "description": "Reusable Angular testing capability.",
+  "category": "testing",
+  "capabilities": [
+    "angular-testing",
+    "unit-testing"
+  ],
+  "appliesToAgents": [
+    "web-angular-dev"
+  ],
+  "appliesTo": [
+    "angular",
+    "typescript"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/coding-standards",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

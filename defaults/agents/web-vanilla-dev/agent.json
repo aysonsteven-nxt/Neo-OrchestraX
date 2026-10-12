@@ -39,11 +39,28 @@
       "required": false
     },
     {
-      "id": "web-vanilla/web-standards",
+      "id": "web-vanilla/standards",
       "version": "^1.0.0",
       "required": true
     }
   ],
   "overrideable": true,
-  "priority": 0
+  "priority": 0,
+  "skills": [
+    {
+      "id": "web-development",
+      "version": "^1.0.0",
+      "required": true
+    },
+    {
+      "id": "typescript-development",
+      "version": "^1.0.0",
+      "required": true
+    },
+    {
+      "id": "web-testing",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ]
 }

@@ -1,0 +1,27 @@
+{
+  "id": "java-testing",
+  "version": "1.0.0",
+  "description": "Reusable procedure for designing and implementing Java tests.",
+  "category": "testing",
+  "capabilities": [
+    "java-testing",
+    "unit-testing"
+  ],
+  "appliesToAgents": [
+    "java-dev"
+  ],
+  "appliesTo": [
+    "java",
+    "spring-boot",
+    "maven"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/coding-standards",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

@@ -1,0 +1,29 @@
+{
+  "id": "typescript-development",
+  "version": "1.0.0",
+  "description": "Reusable TypeScript development capability.",
+  "category": "language",
+  "capabilities": [
+    "typescript",
+    "type-safety"
+  ],
+  "appliesToAgents": [
+    "web-angular-dev",
+    "web-vanilla-dev"
+  ],
+  "appliesTo": [
+    "typescript",
+    "angular",
+    "javascript",
+    "web"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/coding-standards",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

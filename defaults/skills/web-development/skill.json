@@ -1,0 +1,30 @@
+{
+  "id": "web-development",
+  "version": "1.0.0",
+  "description": "Reusable HTML, CSS and JavaScript/TypeScript web development capability.",
+  "category": "frontend",
+  "capabilities": [
+    "html",
+    "css",
+    "javascript",
+    "web"
+  ],
+  "appliesToAgents": [
+    "web-vanilla-dev"
+  ],
+  "appliesTo": [
+    "web",
+    "html",
+    "css",
+    "javascript"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/coding-standards",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

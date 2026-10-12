@@ -18,7 +18,8 @@ export interface ProviderContext {
   };
   installedPacks: string[];
   instructions: Array<{ id: string; version: string; category: string; source: string; required: boolean; content: string }>;
-  agents: Array<{ id: string; version: string; role: string; source: string; capabilities: string[]; content: string; requiredInstructions: Array<{ id: string; version: string; required: boolean; available: boolean }> }>;
+  skills: Array<{ id: string; version: string; category: string; source: string; capabilities: string[]; appliesToAgents: string[]; content: string }>;
+  agents: Array<{ id: string; version: string; role: string; source: string; capabilities: string[]; content: string; requiredInstructions: Array<{ id: string; version: string; required: boolean; available: boolean }>; resolvedSkills: Array<{ id: string; version: string; required: boolean; available: boolean; source?: string }> }>;
   syntra: Array<{ title: string; content: string; category: string; status: string }>;
   latestHandoff?: {
     title: string;

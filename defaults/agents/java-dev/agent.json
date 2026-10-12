@@ -42,5 +42,22 @@
     }
   ],
   "overrideable": true,
-  "priority": 0
+  "priority": 0,
+  "skills": [
+    {
+      "id": "java-development",
+      "version": "^1.0.0",
+      "required": true
+    },
+    {
+      "id": "java-testing",
+      "version": "^1.0.0",
+      "required": true
+    },
+    {
+      "id": "java-code-review",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ]
 }

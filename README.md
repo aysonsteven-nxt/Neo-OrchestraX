@@ -1,6 +1,6 @@
 # Neo OrchestraX
 
-**Version 0.11.0**
+**Version 0.12.0**
 
 V0.9 establishes provider adapters and provider-specific project artifacts while keeping OrchestraX canonical context provider-neutral.
 
@@ -64,4 +64,20 @@ AI-facing commands:
 @agents
 @agents for MoneyMap
 @agent java-dev for MoneyMap
+```
+
+## V0.12 Skills
+
+Skills are reusable capabilities mapped to Agents. OrchestraX ships default skills for Java, Android, Angular and vanilla web development, with user, workspace and project layers available for customization.
+
+```text
+Default Rails → Agent → Skills → Provider Adapter
+```
+
+AI-facing commands:
+
+```text
+@skills
+@skills for MoneyMap
+@skill compose-development for MoneyMap
 ```

@@ -7,6 +7,7 @@ import { getLatestHandoff } from "../handoff/manager.js";
 import { getProvider, providers } from "./adapters.js";
 import { resolveInstructions } from "../instructions/resolver.js";
 import { resolveAgents } from "../agents/resolver.js";
+import { resolveSkills, resolveSkillsForAgent } from "../skills/resolver.js";
 import type { ProviderArtifact, ProviderContext, ProviderId } from "./types.js";
 
 export interface ProviderSyncResult {
@@ -21,11 +22,16 @@ function buildContext(project: { id: string; name: string; path: string }, works
   const handoff = getLatestHandoff(project.path);
   const instructionResolution = resolveInstructions(orchestraxRoot, workspaceRoot, project);
   const agentResolution = resolveAgents(orchestraxRoot, workspaceRoot, project);
+  const skillResolution = resolveSkills(orchestraxRoot, workspaceRoot, project);
+  const skillMap = new Map(skillResolution.skills.map(s => [s.id.toLowerCase(), s]));
+  for (const agent of agentResolution.agents) for (const skill of resolveSkillsForAgent(orchestraxRoot, workspaceRoot, project, agent.id).skills) skillMap.set(skill.id.toLowerCase(), skill);
+  const effectiveSkills = [...skillMap.values()];
   return {
     projectProfile: { signals: profile.signals },
     installedPacks: listInstalled(project.path),
+    skills: effectiveSkills.map(s => ({ id: s.id, version: s.version, category: s.category, source: s.source, capabilities: s.capabilities, appliesToAgents: s.appliesToAgents, content: s.content })),
     instructions: instructionResolution.instructions.map(i => ({ id: i.id, version: i.version, category: i.category, source: i.source, required: i.required, content: i.content })),
-    agents: agentResolution.agents.map(a => ({ id: a.id, version: a.version, role: a.role, source: a.source, capabilities: a.capabilities, content: a.content, requiredInstructions: a.resolvedInstructions })),
+    agents: agentResolution.agents.map(a => ({ id: a.id, version: a.version, role: a.role, source: a.source, capabilities: a.capabilities, content: a.content, requiredInstructions: a.resolvedInstructions, resolvedSkills: a.resolvedSkills })),
     syntra: syntra.map(e => ({ title: e.title, content: e.content, category: e.category, status: e.status })),
     latestHandoff: handoff ? { title: handoff.title, objective: handoff.objective, nextAction: handoff.nextAction } : undefined
   };
@@ -70,7 +76,7 @@ function writeManifest(projectPath: string): void {
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, "manifest.json"), JSON.stringify({
     generatedBy: "neo-orchestrax",
-    version: "0.11.0",
+    version: "0.12.0",
     providers: providers.map(p => p.id),
     updatedAt: new Date().toISOString()
   }, null, 2) + "\n", "utf8");

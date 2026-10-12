@@ -1,0 +1,27 @@
+{
+  "id": "web-testing",
+  "version": "1.0.0",
+  "description": "Reusable testing capability for vanilla web projects.",
+  "category": "testing",
+  "capabilities": [
+    "web-testing",
+    "browser-testing"
+  ],
+  "appliesToAgents": [
+    "web-vanilla-dev"
+  ],
+  "appliesTo": [
+    "web",
+    "javascript",
+    "typescript"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/coding-standards",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

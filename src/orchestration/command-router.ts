@@ -24,7 +24,9 @@ const supported = new Set([
   "provider-sync",
   "instructions",
   "agents",
-  "agent"
+  "agent",
+  "skills",
+  "skill"
 ]);
 
 export function routeCommand(input: string, projects: Project[]): CommandResult {

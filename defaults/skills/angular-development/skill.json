@@ -1,0 +1,27 @@
+{
+  "id": "angular-development",
+  "version": "1.0.0",
+  "description": "Reusable Angular development capability.",
+  "category": "frontend",
+  "capabilities": [
+    "angular",
+    "typescript",
+    "frontend"
+  ],
+  "appliesToAgents": [
+    "web-angular-dev"
+  ],
+  "appliesTo": [
+    "angular",
+    "typescript"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/coding-standards",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}

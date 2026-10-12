@@ -42,11 +42,16 @@ export function removePack(projectPath: string, packName: string): InstallResult
   return { ok: true, message: `Removed ${packName} from ${path.basename(projectPath)}` };
 }
 
+interface InstalledEntry {
+  name: string;
+  isDirectory(): boolean;
+}
+
 export function listInstalled(projectPath: string): string[] {
   const root = installedPacksPath(projectPath);
   if (!fs.existsSync(root)) return [];
 
-  return fs.readdirSync(root, { withFileTypes: true })
+  return (fs.readdirSync(root, { withFileTypes: true }) as InstalledEntry[])
     .filter(e => e.isDirectory())
     .map(e => e.name)
     .sort();

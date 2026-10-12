@@ -1,0 +1,27 @@
+{
+  "id": "java-development",
+  "version": "1.0.0",
+  "description": "Java application development patterns for Java 21 and maintainable service code.",
+  "category": "java",
+  "capabilities": [
+    "java",
+    "backend"
+  ],
+  "appliesToAgents": [
+    "java-dev"
+  ],
+  "appliesTo": [
+    "java",
+    "spring-boot",
+    "maven"
+  ],
+  "requiredInstructions": [
+    {
+      "id": "common/coding-standards",
+      "version": "^1.0.0",
+      "required": true
+    }
+  ],
+  "overrideable": true,
+  "priority": 0
+}
