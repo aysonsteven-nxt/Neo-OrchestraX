@@ -1,36 +1,85 @@
-export interface OrchestraCommandDefinition {
-  name: string;
-  description: string;
-  argumentHint?: string;
+import fs from "node:fs";
+import path from "node:path";
+import type { AiCommandDefinition, AiCommandHandler, AiCommandTargetMode } from "./types.js";
+
+const FILE_PATTERN = /^(.*)\.command\.md$/;
+const VALID_HANDLERS = new Set<string>([
+  "package-selector", "package-install", "package-list", "package-installed",
+  "package-remove", "package-validate", "context", "task", "handoff", "resume",
+  "provider-sync", "instructions", "agents", "agent", "skills", "skill", "pack"
+]);
+
+function parseFrontmatter(content: string): { metadata: Record<string, string>; body: string } {
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
+  if (!match) return { metadata: {}, body: content.trim() };
+
+  const metadata: Record<string, string> = {};
+  for (const line of match[1].split(/\r?\n/)) {
+    const separator = line.indexOf(":");
+    if (separator < 0) continue;
+    const key = line.slice(0, separator).trim();
+    const value = line.slice(separator + 1).trim().replace(/^['"]|['"]$/g, "");
+    if (key) metadata[key] = value;
+  }
+  return { metadata, body: match[2].trim() };
 }
 
-/**
- * Canonical user-facing OrchestraX actions.
- * The command router is the source of truth; providers project these actions
- * into provider-native invocation mechanisms.
- */
-export const orchestraCommands: OrchestraCommandDefinition[] = [
-  { name: "package-selector", description: "Recommend the most relevant OrchestraX packs for the target project.", argumentHint: "[for <project>]" },
-  { name: "package-install", description: "Install an OrchestraX pack and its required dependencies for the target project.", argumentHint: "<pack> [for <project>]" },
-  { name: "package-list", description: "List available OrchestraX packs." },
-  { name: "package-installed", description: "List OrchestraX packs installed in the target project.", argumentHint: "for <project>" },
-  { name: "package-remove", description: "Remove an installed OrchestraX pack from the target project.", argumentHint: "<pack> for <project>" },
-  { name: "package-validate", description: "Validate an OrchestraX pack definition.", argumentHint: "<pack>" },
-  { name: "context", description: "Resolve relevant OrchestraX project context for the current task.", argumentHint: "[query] [for <project>]" },
-  { name: "task", description: "Create, inspect, or update OrchestraX task state.", argumentHint: "<action> ... [for <project>]" },
-  { name: "handoff", description: "Create or inspect a transferable OrchestraX work handoff.", argumentHint: "[for <project>]" },
-  { name: "resume", description: "Resume from the latest OrchestraX handoff.", argumentHint: "[for <project>]" },
-  { name: "instructions", description: "Inspect effective OrchestraX rails / instructions.", argumentHint: "[<instruction-id>] [for <project>]" },
-  { name: "agents", description: "Inspect effective OrchestraX agents.", argumentHint: "[for <project>]" },
-  { name: "agent", description: "Inspect one OrchestraX agent.", argumentHint: "<agent-id> [for <project>]" },
-  { name: "skills", description: "Inspect effective OrchestraX skills.", argumentHint: "[for <project>]" },
-  { name: "skill", description: "Inspect one OrchestraX skill.", argumentHint: "<skill-id> [for <project>]" },
-  { name: "provider-sync", description: "Synchronize effective OrchestraX context to a provider.", argumentHint: "[provider] [for <project>]" },
-  { name: "pack", description: "Inspect or compose an OrchestraX pack dependency graph.", argumentHint: "<action> ... [for <project>]" }
-];
+function parseCommandFile(filePath: string): AiCommandDefinition {
+  const source = fs.readFileSync(filePath, "utf8");
+  const { metadata, body } = parseFrontmatter(source);
+  const fileName = path.basename(filePath).replace(FILE_PATTERN, "$1");
+  const id = metadata.id || fileName;
+  const handler = metadata.handler || id;
+  const target = metadata.target || "required";
 
-const commandMap = new Map(orchestraCommands.map(command => [command.name, command]));
+  if (!id.trim()) throw new Error(`Command file has no id: ${filePath}`);
+  if (!metadata.version?.trim()) throw new Error(`Command ${id} is missing version.`);
+  if (!metadata.description?.trim()) throw new Error(`Command ${id} is missing description.`);
+  if (!metadata.usage?.trim()) throw new Error(`Command ${id} is missing usage.`);
+  if (!VALID_HANDLERS.has(handler)) throw new Error(`Command ${id} has unsupported handler: ${handler}`);
+  if (!["required", "optional", "none"].includes(target)) throw new Error(`Command ${id} has invalid target mode: ${target}`);
 
-export function getCommandDefinition(name: string): OrchestraCommandDefinition | undefined {
-  return commandMap.get(name.toLowerCase());
+  return {
+    id,
+    version: metadata.version,
+    description: metadata.description,
+    argumentHint: metadata["argument-hint"],
+    usage: metadata.usage,
+    handler: handler as AiCommandHandler,
+    target: target as AiCommandTargetMode,
+    prompt: body,
+    sourcePath: filePath
+  };
+}
+
+export function loadCommands(commandsRoot: string): AiCommandDefinition[] {
+  if (!fs.existsSync(commandsRoot)) return [];
+
+  const commands: AiCommandDefinition[] = [];
+  for (const entry of fs.readdirSync(commandsRoot, { withFileTypes: true })) {
+    if (!entry.isFile() || !FILE_PATTERN.test(entry.name)) continue;
+    commands.push(parseCommandFile(path.join(commandsRoot, entry.name)));
+  }
+
+  const seen = new Set<string>();
+  for (const command of commands) {
+    const key = command.id.toLowerCase();
+    if (seen.has(key)) throw new Error(`Duplicate OrchestraX AI command: ${command.id}`);
+    seen.add(key);
+  }
+
+  return commands.sort((a, b) => a.id.localeCompare(b.id));
+}
+
+export function findCommand(commands: AiCommandDefinition[], id: string): AiCommandDefinition | undefined {
+  return commands.find(command => command.id.toLowerCase() === id.trim().toLowerCase());
+}
+
+export function validateCommandDirectory(commandsRoot: string): string[] {
+  try {
+    loadCommands(commandsRoot);
+    return [];
+  } catch (error) {
+    return [error instanceof Error ? error.message : String(error)];
+  }
 }

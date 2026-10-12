@@ -3,36 +3,42 @@ export interface ParsedCommand {
   args: string[];
   project?: string;
   raw: string;
+  prefix: "/" | "@";
+  legacy: boolean;
+}
+
+function tokenize(input: string): string[] {
+  return input.match(/(?:[^\s"]+|"[^"]*")+/g)?.map(token =>
+    token.startsWith('"') && token.endsWith('"') ? token.slice(1, -1) : token
+  ) ?? [];
 }
 
 export function parseCommand(input: string): ParsedCommand {
   const raw = input.trim();
-  // Slash is the canonical OrchestraX user-facing syntax.
-  // @ remains accepted as a backwards-compatible parser alias for older
-  // OrchestraX sessions, but it is no longer documented as the primary UX.
-  const match = raw.match(/^[/@](\S+)(?:\s+([\s\S]*))?$/);
+  const match = raw.match(/^([/@])(\S+)(?:\s+([\s\S]*))?$/);
 
   if (!match) {
-    throw new Error("Invalid OrchestraX command. Commands must start with /.");
+    throw new Error("Invalid OrchestraX AI command. Commands use the /command syntax.");
   }
 
-  const name = match[1];
-  let remainder = (match[2] ?? "").trim();
+  const prefix = match[1] as "/" | "@";
+  const name = match[2];
+  let remainder = (match[3] ?? "").trim();
   let project: string | undefined;
 
-  // Project targeting uses the canonical:
-  // /command ... for <project>
+  // Canonical targeting: /command ... for <project>
   const projectMatch = remainder.match(/(?:^|\s+)for\s+(.+)$/i);
   if (projectMatch) {
     project = projectMatch[1].trim();
     remainder = remainder.slice(0, projectMatch.index ?? 0).trim();
   }
 
-  const args = remainder
-    ? remainder.match(/(?:[^\s"]+|"[^"]*")+/g)?.map(a =>
-        a.startsWith('"') && a.endsWith('"') ? a.slice(1, -1) : a
-      ) ?? []
-    : [];
-
-  return { name, args, project, raw };
+  return {
+    name,
+    args: tokenize(remainder),
+    project,
+    raw,
+    prefix,
+    legacy: prefix === "@"
+  };
 }

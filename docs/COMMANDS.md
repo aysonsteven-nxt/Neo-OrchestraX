@@ -1,43 +1,57 @@
 # Commands
 
-AI-facing commands are handled by Neo OrchestraX:
+## AI Commands — PRIMARY
+
+AI Commands are the user-facing commands intended for AI conversations.
 
 ```text
 /package-selector
 /package-install android-kotlin-dev for MoneyMap
+/package-list
+/package-installed for MoneyMap
+/package-remove android-kotlin-dev for MoneyMap
+/package-validate android-kotlin-dev for MoneyMap
 /context for MoneyMap
-/task start "Transaction history" for MoneyMap
-/handoff
+/task start "Transaction history" "Track transaction history" for MoneyMap
 /handoff for MoneyMap
-/resume
+/resume for MoneyMap
 /instructions for MoneyMap
 /agents for MoneyMap
 /agent android-dev for MoneyMap
-```
-
-Syntra is internal and has no `@syntra` command.
-
-Provider integration:
-
-```text
-/provider-sync
-/provider-sync for MoneyMap
+/skills for MoneyMap
+/skill compose-development for MoneyMap
+/pack android-kotlin-dev for MoneyMap
 /provider-sync copilot for MoneyMap
 ```
 
-## Skills
+Syntra remains internal and has no `/syntra` command.
 
-- `/skills` — show effective skills
-- `/skill <id>` — show a specific skill
-- `/skills for <project>` — target a project
-- `/skill <id> for <project>` — target a project
+## Command definitions
 
-## GitHub Copilot slash actions
-
-GitHub Copilot Agent Host supports Agent Skills as slash commands. OrchestraX can install its user-level provider projection with:
+Canonical definitions are stored under:
 
 ```text
-neo provider sync-user copilot
+commands/*.command.md
 ```
 
-This does not move or replace OrchestraX's canonical definitions.
+The definition includes metadata plus the reusable prompt/instructions for that action.
+
+## Legacy alias
+
+`@...` is still accepted as a compatibility alias, but `/...` is canonical from V0.14 onward.
+
+## CLI — SECONDARY
+
+CLI commands remain separate:
+
+```text
+neo pack list
+neo analyze MoneyMap
+neo provider sync MoneyMap copilot
+```
+
+The diagnostic bridge can exercise an AI Command through:
+
+```text
+neo command "/package-selector for MoneyMap"
+```

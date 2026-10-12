@@ -23,15 +23,83 @@ Workspace
   |       |
   |       +-- Instruction dependencies
   |
+  +-- Skills
   +-- Syntra
   +-- Context Resolver
   +-- Tasks
   +-- Handoff / Resume
+  +-- AI Commands                <-- PRIMARY interface
+  |       |
+  |       +-- canonical /command syntax
+  |       +-- command definitions under commands/
+  |       +-- command router / handlers
+  |
+  +-- CLI                         <-- SECONDARY interface
+  |
   +-- Provider Adapters
+          |
+          +-- Copilot
+          +-- Gemini / Antigravity
+          +-- Claude Code
+          +-- Cursor
 ```
 
-The user talks to Neo OrchestraX. Syntra is the internal persistent project-intelligence/context layer.
+## Canonical source of truth
 
-## Composition direction
+The following remain provider-neutral and live inside Neo OrchestraX:
 
-V0.10 establishes effective instructions/rails. V0.11 adds role-oriented agents that consume those rails. V0.12 will add reusable skills. V0.13 will make packs explicit compositions of these components and resolve their dependency graph.
+- agents/
+- skills/
+- instructions/
+- commands/
+- packs/
+- Syntra/project intelligence
+
+Provider adapters do not redefine these concepts. They only translate or expose them using provider-native mechanisms.
+
+## AI Commands versus CLI
+
+AI Commands are not CLI commands.
+
+```text
+AI conversation
+    |
+    v
+AI Command Router
+    |
+    v
+OrchestraX subsystem
+```
+
+versus:
+
+```text
+terminal
+    |
+    v
+CLI Router
+    |
+    v
+OrchestraX subsystem
+```
+
+Both may call the same domain services, but their interfaces remain separate.
+
+## Provider abstraction
+
+```text
+                 Neo OrchestraX Core
+                        |
+                 Canonical AI Command
+                        |
+          +-------------+-------------+
+          |             |             |
+       Copilot       Gemini        Claude
+       adapter       adapter       adapter
+          |             |             |
+          +-------------+-------------+
+                        |
+                provider-native surface
+```
+
+The core never requires a specific provider invocation syntax.

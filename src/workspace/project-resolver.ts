@@ -1,4 +1,4 @@
-import type { Project } from "../index.js";
+import type { Project } from "./types.js";
 
 export interface ResolutionResult {
   status: "resolved" | "ambiguous" | "not-found" | "none";

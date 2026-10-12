@@ -1,7 +1,6 @@
-#!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
-import { routeCommand } from "./orchestration/command-router.js";
+import { executeAiCommand } from "./orchestration/ai-command-service.js";
 import { loadPackRegistry } from "./packs/registry.js";
 import { validatePack } from "./packs/validator.js";
 import { installPack, listInstalled, removePack } from "./packs/installer.js";
@@ -17,7 +16,7 @@ import { createTask, listTasks, getTask, changeTaskStatus } from "./tasks/manage
 import { resolveTaskContext } from "./tasks/context.js";
 import { createHandoff, getHandoff, getLatestHandoff, listHandoffs } from "./handoff/manager.js";
 import { formatHandoff } from "./handoff/formatter.js";
-import { listProviders, syncProvider, syncAllProviders, syncCopilotUserSkills } from "./providers/manager.js";
+import { listProviders, syncProvider, syncAllProviders } from "./providers/manager.js";
 import { defaultInstructionsRoot, userInstructionsRoot, workspaceInstructionsRoot, projectInstructionsRoot, listInstructionDirectories, validateInstructionDirectory } from "./instructions/registry.js";
 import { findInstruction, resolveInstructions } from "./instructions/resolver.js";
 import { findAgent, resolveAgents } from "./agents/resolver.js";
@@ -25,8 +24,8 @@ import { validateAgentDirectory } from "./agents/registry.js";
 import { findSkill, resolveSkills, resolveAllSkills } from "./skills/resolver.js";
 import { validateSkillDirectory } from "./skills/registry.js";
 
-export interface Project { id: string; name: string; path: string; }
-export interface Workspace { root: string; projects: Project[]; }
+import type { Project, Workspace } from "./workspace/types.js";
+export type { Project, Workspace } from "./workspace/types.js";
 
 interface DirectoryEntry {
   name: string;
@@ -53,7 +52,7 @@ export function discoverWorkspace(root: string): Workspace {
 
 function help(): void {
   console.log(`
-Neo OrchestraX v0.13.1
+Neo OrchestraX v0.14.0
 
 Workspace:
   neo workspace status
@@ -85,7 +84,6 @@ Packs:
 Providers:
   neo provider list
   neo provider sync <project> [provider]
-  neo provider sync-user copilot
 
 Instructions / Rails:
   neo instruction list <project>
@@ -112,21 +110,22 @@ Syntra diagnostics:
   neo syntra add <project> "<title>" "<content>" <category>
   neo syntra status <project> <entry-id> <status>
 
-AI-facing commands are routed through Neo OrchestraX:
-  /handoff
+AI-facing OrchestraX commands (PRIMARY; provider-native invocation is separate):
+  /package-selector
+  /package-install android-kotlin-dev for MoneyMap
+  /context for MoneyMap
+  /task start "Transaction history" "Track transaction history" for MoneyMap
   /handoff for MoneyMap
-  /resume
   /resume for MoneyMap
-  /provider-sync
-  /provider-sync copilot for MoneyMap
-  /instructions
   /instructions for MoneyMap
-  /agents
   /agents for MoneyMap
-  /agent java-dev for MoneyMap
-  /skills
+  /agent android-dev for MoneyMap
   /skills for MoneyMap
-  /skill android-development for MoneyMap
+  /skill compose-development for MoneyMap
+  /provider-sync copilot for MoneyMap
+
+Diagnostic bridge (secondary CLI interface):
+  neo command "/package-selector for MoneyMap"
 `);
 }
 
@@ -138,7 +137,7 @@ const workspace = discoverWorkspace(process.cwd());
 const packRoot = path.join(workspace.root, "neo-orchestrax", "packs");
 
 if (command === "status" || args.join(" ") === "workspace status") {
-  console.log("Neo OrchestraX v0.13.1");
+  console.log("Neo OrchestraX v0.14.0");
   console.log(`Workspace: ${workspace.root}`);
   console.log(`Projects: ${workspace.projects.length}`);
   workspace.projects.forEach(p => console.log(`  - ${p.name} (${p.id})`));
@@ -198,7 +197,10 @@ if (command === "status" || args.join(" ") === "workspace status") {
 } else if (command === "provider") {
   const sub = args[1];
   if (sub === "list") {
-    listProviders().forEach(p => console.log(`${p.id}\t${p.name}\t${p.description}`));
+    listProviders().forEach(p => {
+      const capabilityFlags = Object.entries(p.capabilities).map(([key, value]) => `${key}=${value}`).join(", ");
+      console.log(`${p.id}\t${p.name}\t${p.description}\t${capabilityFlags}`);
+    });
   } else if (sub === "sync") {
     const project = workspace.projects.find(p => p.name.toLowerCase() === (args[2] ?? "").toLowerCase());
     if (!project) { console.error("Project not found."); process.exit(1); }
@@ -209,13 +211,6 @@ if (command === "status" || args.join(" ") === "workspace status") {
       r.artifacts.forEach(a => console.log(`  + ${a}`));
       r.skipped.forEach(a => console.log(`  ! ${a} (existing unmanaged file)`));
     });
-  } else if (sub === "sync-user") {
-    const provider = (args[2] ?? "").toLowerCase();
-    if (provider !== "copilot") { console.error("User-level provider sync currently supports: copilot"); process.exit(1); }
-    const result = syncCopilotUserSkills();
-    console.log(`copilot: wrote ${result.artifacts.length}, skipped ${result.skipped.length}`);
-    result.artifacts.forEach(a => console.log(`  + ${a}`));
-    result.skipped.forEach(a => console.log(`  ! ${a} (existing unmanaged file)`));
   } else { console.error("Unknown provider command."); process.exit(1); }
 } else if (command === "analyze" || (command === "pack" && args[1] === "recommend")) {
   const projectName = command === "analyze" ? args[1] : args[2];
@@ -371,143 +366,14 @@ if (command === "status" || args.join(" ") === "workspace status") {
     console.log(`Updated ${entry.id} → ${entry.status}`);
   } else { console.error("Unknown Syntra command."); process.exit(1); }
 } else if (command === "command") {
+  // Secondary diagnostic bridge for exercising the PRIMARY AI command router from a terminal.
+  // The command language itself is not a CLI language.
   const input = args.slice(1).join(" ").trim();
-  if (!input) { console.error("Missing OrchestraX command."); process.exit(1); }
-  const result = routeCommand(input, workspace.projects);
-  if (!result.ok) {
-    console.log(result.message);
-    result.candidates?.forEach(p => console.log(`  - ${p.name}`));
-    process.exit(2);
-  }
-
-  const project = result.project!;
-  if (result.command.name === "package-selector") {
-    const profile = analyzeProject(project);
-    const selection = selectPacks(profile, loadPackRegistry(packRoot));
-    console.log(`Pack Recommendations: ${project.name}`);
-    const relevant = selection.recommendations.filter(r => r.score > 0);
-    if (!relevant.length) {
-      console.log("No relevant packs detected from the current project signals.");
-    } else {
-      relevant.forEach(r => {
-        console.log(`\n${r.pack.name} — ${r.score}% technical relevance`);
-        if (r.matchedCapabilities.length) console.log(`  Capabilities: ${r.matchedCapabilities.join(", ")}`);
-        if (r.evidence.length) r.evidence.forEach(e => console.log(`  Evidence: ${e}`));
-      });
-    }
-  } else if (result.command.name === "package-install") {
-    const packName = result.command.args[0];
-    if (!packName) { console.error("Usage: /package-install <pack> for <project>"); process.exit(1); }
-    const target = path.join(packRoot, packName);
-    const install = installPack(target, project.path, [packRoot]);
-    console.log(install.message);
-    if (!install.ok) process.exit(1);
-    install.installed?.forEach(p => console.log(`  + ${p}`));
-  } else if (result.command.name === "instructions") {
-    const orchestraxRoot = path.join(workspace.root, "neo-orchestrax");
-    const resolution = resolveInstructions(orchestraxRoot, workspace.root, project);
-    const requestedId = result.command.args[0];
-    if (requestedId) {
-      const instruction = findInstruction(resolution, requestedId);
-      if (!instruction) { console.error(`Instruction not found: ${requestedId}`); process.exit(1); }
-      console.log(`# ${instruction.id}`);
-      console.log(`Version: ${instruction.version}`);
-      console.log(`Source: ${instruction.source}`);
-      console.log(`\n${instruction.content}`);
-    } else {
-      console.log(`Effective OrchestraX Rails: ${project.name}`);
-      resolution.instructions.forEach(i => console.log(`- ${i.id}@${i.version} [${i.source}${i.required ? ", required" : ""}]`));
-      if (resolution.conflicts.length) resolution.conflicts.forEach(c => console.log(`! ${c}`));
-    }
-  } else if (result.command.name === "agents" || result.command.name === "agent") {
-    const resolution = resolveAgents(path.join(workspace.root, "neo-orchestrax"), workspace.root, project);
-    const requestedId = result.command.args[0];
-    if (requestedId) {
-      const agent = findAgent(resolution, requestedId);
-      if (!agent) { console.error(`Agent not found: ${requestedId}`); process.exit(1); }
-      console.log(`# ${agent.id}`);
-      console.log(`Version: ${agent.version}`);
-      console.log(`Role: ${agent.role}`);
-      console.log(`Source: ${agent.source}`);
-      console.log(`Capabilities: ${agent.capabilities.join(", ") || "none"}`);
-      console.log("\nInstruction dependencies:");
-      agent.resolvedInstructions.forEach(d => console.log(`- ${d.id} @ ${d.version} | ${d.required ? "required" : "optional"} | ${d.available ? `available (${d.source})` : "missing"}`));
-      console.log("\nSkill dependencies:");
-      agent.resolvedSkills.forEach(d => console.log(`- ${d.id} @ ${d.version} | ${d.required ? "required" : "optional"} | ${d.available ? `available (${d.source})` : "missing"}`));
-      console.log(`\n${agent.content}`);
-    } else {
-      console.log(`Applicable OrchestraX Agents: ${project.name}`);
-      resolution.agents.forEach(a => console.log(`- ${a.id}@${a.version} [${a.source}] — ${a.role}`));
-      if (resolution.conflicts.length) resolution.conflicts.forEach(c => console.log(`! ${c}`));
-    }
-  } else if (result.command.name === "skills" || result.command.name === "skill") {
-    const requestedId = result.command.args[0];
-    const agentId = result.command.args[1];
-    const resolution = resolveSkills(path.join(workspace.root,"neo-orchestrax"), workspace.root, project, agentId);
-    if (requestedId) {
-      const skill = findSkill(resolveAllSkills(path.join(workspace.root,"neo-orchestrax"), workspace.root, project), requestedId);
-      if (!skill) { console.error(`Skill not found: ${requestedId}`); process.exit(1); }
-      console.log(`# ${skill.id}`);
-      console.log(`Version: ${skill.version}`);
-      console.log(`Category: ${skill.category}`);
-      console.log(`Source: ${skill.source}`);
-      console.log(`Mapped agents: ${skill.appliesToAgents.join(", ") || "all"}`);
-      console.log(`\n${skill.content}`);
-    } else {
-      console.log(`Effective OrchestraX Skills: ${project.name}${agentId ? ` [${agentId}]` : ""}`);
-      resolution.skills.forEach(sk => console.log(`- ${sk.id}@${sk.version} [${sk.source}] — ${sk.description}`));
-      if (resolution.conflicts.length) resolution.conflicts.forEach(c => console.log(`! ${c}`));
-    }
-  } else if (result.command.name === "pack") {
-    const first = result.command.args[0];
-    const second = result.command.args[1];
-    const isCompose = first === "compose";
-    const packName = isCompose ? second : first;
-    if (!packName) { console.error("Usage: /pack <pack> for <project> or /pack compose <pack> for <project>"); process.exit(1); }
-    if (isCompose || second === "compose") {
-      const composition = composePack(project, packName, path.join(workspace.root, "neo-orchestrax"), workspace.root);
-      if (!composition) { console.error(`Pack not found or invalid: ${packName}`); process.exit(1); }
-      console.log(`Pack Composition: ${packName} → ${project.name}`);
-      composition.order.forEach(p => console.log(`- ${p.pack.name}@${p.pack.version}`));
-      composition.compatibility.forEach(e => console.log(`! ${e}`));
-      composition.issues.forEach(i => console.log(`${i.required ? "!" : "~"} ${i.message}`));
-      if (composition.issues.some(i => i.required) || composition.compatibility.length) process.exit(1);
-    } else {
-      const target = path.join(workspace.root, "neo-orchestrax", "packs", packName);
-      const graph = resolvePackGraph(target, [path.join(workspace.root, "neo-orchestrax", "packs")]);
-      if (!graph) { console.error(`Pack not found or invalid: ${packName}`); process.exit(1); }
-      console.log(`# ${graph.root.pack.name}`);
-      console.log(`Version: ${graph.root.pack.version}`);
-      console.log(`Description: ${graph.root.pack.description}`);
-      console.log("Pack dependencies:");
-      graph.root.pack.dependencies.forEach(d => console.log(`- ${d.id} @ ${d.version} | ${d.required ? "required" : "optional"}`));
-      console.log("Resolved graph:");
-      graph.order.forEach(p => console.log(`- ${p.pack.name}@${p.pack.version}`));
-      graph.issues.forEach(i => console.log(`${i.required ? "!" : "~"} ${i.message}`));
-    }
-  } else if (result.command.name === "provider-sync") {
-    const provider = result.command.args[0];
-    const results = provider ? [syncProvider(project, provider)] : syncAllProviders(project);
-    console.log(`Provider sync: ${project.name}`);
-    results.forEach(r => {
-      console.log(`  ${r.provider}: wrote ${r.artifacts.length}, skipped ${r.skipped.length}`);
-      r.artifacts.forEach(a => console.log(`    + ${a}`));
-      r.skipped.forEach(a => console.log(`    ! ${a} (existing unmanaged file)`));
-    });
-  } else if (result.command.name === "handoff") {
-    const tasks = listTasks(project.path);
-    const task = tasks.filter(t => ["in-progress", "blocked", "planned"].includes(t.status))
-      .sort((a,b) => b.updatedAt.localeCompare(a.updatedAt))[0];
-    const handoff = createHandoff(project.path, { projectId: project.id, task });
-    console.log(formatHandoff(handoff));
-  } else if (result.command.name === "resume") {
-    const handoff = getLatestHandoff(project.path);
-    if (!handoff) { console.error(`No handoff found for ${project.name}.`); process.exit(1); }
-    console.log(formatHandoff(handoff));
-  } else {
-    console.log(result.message);
-  }
-  process.exit(0);
+  if (!input) { console.error('Usage: neo command "/package-selector for <project>"'); process.exit(1); }
+  const result = executeAiCommand(input, workspace);
+  if (result.warning) console.warn(`! ${result.warning}`);
+  console.log(result.output);
+  process.exit(result.ok ? 0 : 2);
 } else {
   console.error(`Unknown CLI command: ${args.join(" ")}`);
   process.exit(1);

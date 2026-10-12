@@ -1,4 +1,27 @@
+import type { AiCommandDefinition } from "../commands/types.js";
+
 export type ProviderId = "copilot" | "gemini" | "claude" | "cursor";
+
+export type ProviderCommandExposure =
+  | "native"
+  | "projected"
+  | "adapter-defined"
+  | "unsupported";
+
+export interface ProviderCapabilities {
+  context: boolean;
+  instructions: boolean;
+  agents: boolean;
+  skills: boolean;
+  aiCommands: ProviderCommandExposure;
+}
+
+export interface ProviderCommandProjection {
+  commandId: string;
+  exposure: ProviderCommandExposure;
+  invocation?: string;
+  notes?: string;
+}
 
 export interface ProviderArtifact {
   relativePath: string;
@@ -9,7 +32,9 @@ export interface ProviderAdapter {
   id: ProviderId;
   name: string;
   description: string;
+  capabilities: ProviderCapabilities;
   generate(project: { id: string; name: string; path: string }, context: ProviderContext): ProviderArtifact[];
+  projectCommands(commands: AiCommandDefinition[]): ProviderCommandProjection[];
 }
 
 export interface ProviderContext {

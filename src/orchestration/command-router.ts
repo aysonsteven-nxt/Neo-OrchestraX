@@ -1,77 +1,78 @@
-import type { Project } from "../index.js";
+import type { Project } from "../workspace/types.js";
+import { resolveProject, type ResolutionResult } from "../workspace/project-resolver.js";
+import { findCommand, loadCommands } from "../commands/registry.js";
+import type { AiCommandDefinition } from "../commands/types.js";
 import { parseCommand, type ParsedCommand } from "./command-parser.js";
-import { resolveProject } from "../workspace/project-resolver.js";
 
 export interface CommandResult {
   ok: boolean;
   command: ParsedCommand;
+  definition?: AiCommandDefinition;
   message: string;
   project?: Project;
   candidates?: Project[];
+  warning?: string;
 }
 
-const supported = new Set([
-  "package-selector",
-  "package-install",
-  "package-list",
-  "package-installed",
-  "package-remove",
-  "package-validate",
-  "context",
-  "task",
-  "handoff",
-  "resume",
-  "provider-sync",
-  "instructions",
-  "agents",
-  "agent",
-  "skills",
-  "skill",
-  "pack"
-]);
+function resolutionMessage(resolution: ResolutionResult): string {
+  switch (resolution.status) {
+    case "ambiguous": return "Project target is ambiguous. Specify: for <project>";
+    case "none": return "No project was discovered in the workspace.";
+    case "not-found": return "The requested project was not found in the workspace.";
+    default: return "";
+  }
+}
 
-export function routeCommand(input: string, projects: Project[]): CommandResult {
+export function routeCommand(input: string, projects: Project[], commandsRoot?: string): CommandResult {
   const command = parseCommand(input);
+  const commands = loadCommands(commandsRoot ?? "commands");
+  const definition = findCommand(commands, command.name);
 
-  if (!supported.has(command.name)) {
+  if (!definition) {
     return {
       ok: false,
       command,
-      message: `Unknown OrchestraX command: /${command.name}`
+      message: `Unknown OrchestraX AI command: ${command.prefix}${command.name}`
+    };
+  }
+
+  if (definition.target === "none") {
+    return {
+      ok: true,
+      command,
+      definition,
+      message: `${command.prefix}${command.name}`,
+      warning: command.legacy ? "@command is accepted for backward compatibility; use /command as the canonical OrchestraX AI syntax." : undefined
+    };
+  }
+
+  if (definition.target === "optional" && !command.project) {
+    return {
+      ok: true,
+      command,
+      definition,
+      message: `${command.prefix}${command.name}`,
+      warning: command.legacy ? "@command is accepted for backward compatibility; use /command as the canonical OrchestraX AI syntax." : undefined
     };
   }
 
   const resolution = resolveProject(projects, command.project);
-
-  if (resolution.status === "resolved") {
-    return {
-      ok: true,
-      command,
-      project: resolution.project,
-      message: `/${command.name} → ${resolution.project?.name}`
-    };
-  }
-
-  if (resolution.status === "ambiguous") {
+  if (resolution.status !== "resolved") {
     return {
       ok: false,
       command,
-      candidates: resolution.candidates,
-      message: "Project target is ambiguous. Specify: for <project>"
-    };
-  }
-
-  if (resolution.status === "none") {
-    return {
-      ok: false,
-      command,
-      message: "No project was discovered in the workspace."
+      definition,
+      message: resolutionMessage(resolution),
+      candidates: resolution.candidates
     };
   }
 
   return {
-    ok: false,
+    ok: true,
     command,
-    message: `Project "${command.project}" was not found in the workspace.`
+    definition,
+    project: resolution.project,
+    message: `${command.prefix}${command.name} → ${resolution.project?.name}`,
+    warning: command.legacy ? "@command is accepted for backward compatibility; use /command as the canonical OrchestraX AI syntax." : undefined
   };
 }
