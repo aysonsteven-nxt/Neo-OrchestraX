@@ -25,7 +25,7 @@ import { findSkill, resolveSkills, resolveAllSkills } from "./skills/resolver.js
 import { validateSkillDirectory } from "./skills/registry.js";
 
 import type { Project, Workspace } from "./workspace/types.js";
-import { isOrchestraXDirectory, locateOrchestraX } from "./workspace/discovery.js";
+import { isOrchestraXDirectory, isProjectDirectory, locateOrchestraX } from "./workspace/discovery.js";
 export type { Project, Workspace } from "./workspace/types.js";
 
 interface DirectoryEntry {
@@ -33,13 +33,6 @@ interface DirectoryEntry {
   isFile(): boolean;
   isDirectory(): boolean;
 }
-
-function isProject(dir: string): boolean {
-  const entries = fs.readdirSync(dir, { withFileTypes: true }) as DirectoryEntry[];
-  return entries.some(e => e.isFile() && ["package.json","build.gradle","settings.gradle","pom.xml"].includes(e.name))
-    || entries.some(e => e.isDirectory() && [".git",".devkit",".orchestrax"].includes(e.name));
-}
-
 
 
 export function discoverWorkspace(root: string): Workspace {
@@ -51,14 +44,14 @@ export function discoverWorkspace(root: string): Workspace {
     if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
     const projectPath = path.join(resolved, entry.name);
     if (isOrchestraXDirectory(projectPath)) continue;
-    if (isProject(projectPath)) projects.push({ id: entry.name, name: entry.name, path: projectPath });
+    if (isProjectDirectory(projectPath)) projects.push({ id: entry.name, name: entry.name, path: projectPath });
   }
   return { root: resolved, orchestraxRoot, projects };
 }
 
 function help(): void {
   console.log(`
-Neo OrchestraX v0.14.1
+Neo OrchestraX v0.14.3
 
 Workspace:
   neo workspace status
@@ -143,7 +136,7 @@ const workspace = discoverWorkspace(process.cwd());
 const packRoot = path.join(workspace.orchestraxRoot, "packs");
 
 if (command === "status" || args.join(" ") === "workspace status") {
-  console.log("Neo OrchestraX v0.14.1");
+  console.log("Neo OrchestraX v0.14.3");
   console.log(`Workspace: ${workspace.root}`);
   console.log(`Projects: ${workspace.projects.length}`);
   workspace.projects.forEach(p => console.log(`  - ${p.name} (${p.id})`));

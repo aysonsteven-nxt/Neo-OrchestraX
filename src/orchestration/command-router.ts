@@ -26,7 +26,7 @@ function resolutionMessage(resolution: ResolutionResult): string {
   }
 }
 
-export function routeCommand(input: string, projects: Project[], commandsRoot?: string, workspaceRoot?: string): CommandResult {
+export function routeCommand(input: string, projects: Project[], commandsRoot?: string, workspaceRoot?: string, orchestraxRoot?: string): CommandResult {
   const command = parseCommand(input);
   const commands = loadCommands(commandsRoot ?? "commands");
   const definition = findCommand(commands, command.name);
@@ -61,33 +61,40 @@ export function routeCommand(input: string, projects: Project[], commandsRoot?: 
 
   const resolution = resolveProject(projects, command.project);
   if (resolution.status !== "resolved") {
-    if (resolution.status === "not-found" && command.project && workspaceRoot) {
+    if (resolution.status === "not-found" && command.project) {
       const requested = command.project.trim().replace(/^['"]|['"]$/g, "");
-      const candidatePath = path.isAbsolute(requested)
-        ? path.normalize(requested)
-        : path.resolve(workspaceRoot, requested);
-      const workspaceResolved = path.resolve(workspaceRoot);
-      const candidateResolved = path.resolve(candidatePath);
-      const withinWorkspace = candidateResolved !== workspaceResolved
-        && candidateResolved.startsWith(`${workspaceResolved}${path.sep}`);
-      const candidateIsOrchestraX = isOrchestraXDirectory(candidateResolved);
+      const roots = [
+        workspaceRoot ? path.resolve(workspaceRoot) : undefined,
+        orchestraxRoot ? path.dirname(path.resolve(orchestraxRoot)) : undefined
+      ].filter((root): root is string => Boolean(root));
 
-      if (withinWorkspace && !candidateIsOrchestraX && fs.existsSync(candidateResolved) && fs.statSync(candidateResolved).isDirectory()) {
-        const explicitProject: Project = {
-          id: path.basename(candidateResolved),
-          name: path.basename(candidateResolved),
-          path: candidateResolved
-        };
-        return {
-          ok: true,
-          command,
-          definition,
-          project: explicitProject,
-          message: `${command.prefix}${command.name} → ${explicitProject.name}`,
-          warning: command.legacy
-            ? "@command is accepted for backward compatibility; use /command as the canonical OrchestraX AI syntax."
-            : undefined
-        };
+      for (const root of roots) {
+        const candidatePath = path.isAbsolute(requested)
+          ? path.normalize(requested)
+          : path.resolve(root, requested);
+        const rootResolved = path.resolve(root);
+        const candidateResolved = path.resolve(candidatePath);
+        const withinRoot = candidateResolved !== rootResolved
+          && candidateResolved.startsWith(`${rootResolved}${path.sep}`);
+        const candidateIsOrchestraX = isOrchestraXDirectory(candidateResolved);
+
+        if (withinRoot && !candidateIsOrchestraX && fs.existsSync(candidateResolved) && fs.statSync(candidateResolved).isDirectory()) {
+          const explicitProject: Project = {
+            id: path.basename(candidateResolved),
+            name: path.basename(candidateResolved),
+            path: candidateResolved
+          };
+          return {
+            ok: true,
+            command,
+            definition,
+            project: explicitProject,
+            message: `${command.prefix}${command.name} → ${explicitProject.name}`,
+            warning: command.legacy
+              ? "@command is accepted for backward compatibility; use /command as the canonical OrchestraX AI syntax."
+              : undefined
+          };
+        }
       }
     }
 

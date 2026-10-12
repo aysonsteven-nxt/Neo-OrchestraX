@@ -1,4 +1,4 @@
-## V0.14.2
+## V0.14.3
 
 Explicit AI command targets can resolve existing workspace project directories even when automatic discovery does not classify them.
 

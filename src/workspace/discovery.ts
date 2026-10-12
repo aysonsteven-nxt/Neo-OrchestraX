@@ -4,12 +4,46 @@ import path from "node:path";
 interface DirectoryEntry {
   name: string;
   isDirectory(): boolean;
+  isFile(): boolean;
 }
 
 export function isOrchestraXDirectory(dir: string): boolean {
   try {
     const packageJson = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8")) as { name?: string };
     return packageJson.name === "neo-orchestrax";
+  } catch {
+    return false;
+  }
+}
+
+export function isProjectDirectory(dir: string): boolean {
+  try {
+    const entries = fs.readdirSync(dir, { withFileTypes: true }) as DirectoryEntry[];
+    const files = new Set(entries.filter(entry => entry.isFile()).map(entry => entry.name));
+    const directories = new Set(entries.filter(entry => entry.isDirectory()).map(entry => entry.name));
+
+    const projectFiles = [
+      "package.json",
+      "angular.json",
+      "project.json",
+      "pom.xml",
+      "build.gradle",
+      "build.gradle.kts",
+      "settings.gradle",
+      "settings.gradle.kts",
+      "Cargo.toml",
+      "go.mod",
+      "pyproject.toml",
+      "requirements.txt",
+      "composer.json"
+    ];
+
+    if (projectFiles.some(file => files.has(file))) return true;
+    if ([".git", ".devkit", ".orchestrax", ".angular"].some(dirName => directories.has(dirName))) return true;
+    if (directories.has("src") && (directories.has("public") || directories.has(".vscode") || directories.has(".idea"))) return true;
+    if (["package-lock.json", "pnpm-lock.yaml", "yarn.lock", "bun.lockb"].some(file => files.has(file))) return true;
+
+    return false;
   } catch {
     return false;
   }
