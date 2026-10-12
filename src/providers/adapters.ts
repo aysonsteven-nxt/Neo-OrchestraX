@@ -68,8 +68,8 @@ export const providers: ProviderAdapter[] = [
     ],
     commandProjection("projected", "/<command>", "Projected through the Copilot Agent Plugin command surface."),
     commands => commands.map(command => ({
-      relativePath: `providers/copilot/com.github.copilot/commands/${command.id}.md`,
-      content: `---\ndescription: ${command.description}\nargument-hint: ${command.argumentHint ?? ""}\n---\n\n# Neo OrchestraX /${command.id}\n\nThis is the Copilot projection of the provider-neutral Neo OrchestraX AI command \`/${command.id}\`.\n\nUsage: \`${command.usage}\`\n\n${command.prompt}\n\nRoute the requested operation through the Neo OrchestraX command engine. Preserve explicit project targeting and do not substitute a different command name.`
+      relativePath: `providers/copilot/skills/${command.id}/SKILL.md`,
+      content: `---\nname: ${command.id}\ndescription: ${JSON.stringify(command.description)}\nuser-invocable: true\ndisable-model-invocation: true\n---\n\n# Neo OrchestraX /${command.id}\n\nThis is the Copilot Agent Skill projection of the provider-neutral Neo OrchestraX AI command \`/${command.id}\`.\n\nUsage: \`${command.usage}\`\n\n## Instructions\n${command.prompt}\n\nTreat this as an OrchestraX action, not a terminal command. Preserve explicit project targeting and do not substitute a different OrchestraX action. Use the available OrchestraX command/CLI bridge only when needed to execute the action.`
     }))
   ),
   adapter(

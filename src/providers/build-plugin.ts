@@ -20,7 +20,7 @@ const manifest = {
   $schema: "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   name: "neo-orchestrax",
   description: "Neo OrchestraX provider projection for GitHub Copilot.",
-  version: "0.14.6",
+  version: "0.14.7",
   author: { name: "NeoQuantum Software Labs" },
   keywords: ["neo-orchestrax", "orchestration", "ai-development"]
 };

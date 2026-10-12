@@ -88,7 +88,7 @@ function writeManifest(projectPath: string, commandsRoot: string): void {
   const commands = loadCommands(commandsRoot);
   fs.writeFileSync(path.join(dir, "manifest.json"), JSON.stringify({
     generatedBy: "neo-orchestrax",
-    version: "0.14.6",
+    version: "0.14.7",
     providers: providers.map(p => ({ id: p.id, capabilities: p.capabilities })),
     aiCommands: commands.map(command => ({ id: command.id, version: command.version, description: command.description, usage: command.usage })),
     updatedAt: new Date().toISOString()
