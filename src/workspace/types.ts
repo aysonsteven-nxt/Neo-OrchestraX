@@ -8,4 +8,6 @@ export interface Workspace {
   root: string;
   orchestraxRoot: string;
   projects: Project[];
+  folderRoots?: string[];
+  workspaceFile?: string;
 }

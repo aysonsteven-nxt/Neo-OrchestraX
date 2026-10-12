@@ -82,7 +82,7 @@ Provider adapters determine how those canonical capabilities are exposed through
 
 ## V0.14.1
 
-This bug-fix release improves workspace and OrchestraX root discovery so versioned release folders and invocation from inside the OrchestraX directory work correctly.
+This bug-fix release improves multi-root workspace discovery and invocation from inside the OrchestraX directory by honoring a detected VS Code `.code-workspace` configuration.
 
 
 V0.14 introduces:

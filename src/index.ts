@@ -39,19 +39,42 @@ export function discoverWorkspace(root: string): Workspace {
   const located = locateOrchestraX(root);
   const resolved = located.workspaceRoot;
   const orchestraxRoot = located.orchestraxRoot;
+  const candidateRoots = located.folderRoots?.length ? located.folderRoots : [resolved];
   const projects: Project[] = [];
-  for (const entry of fs.readdirSync(resolved, { withFileTypes: true }) as DirectoryEntry[]) {
-    if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
-    const projectPath = path.join(resolved, entry.name);
+  const seen = new Set<string>();
+
+  for (const candidateRoot of candidateRoots) {
+    const projectPath = path.resolve(candidateRoot);
+    if (seen.has(projectPath) || !fs.existsSync(projectPath) || !fs.statSync(projectPath).isDirectory()) continue;
+    seen.add(projectPath);
     if (isOrchestraXDirectory(projectPath)) continue;
-    if (isProjectDirectory(projectPath)) projects.push({ id: entry.name, name: entry.name, path: projectPath });
+    if (isProjectDirectory(projectPath)) {
+      const id = path.basename(projectPath);
+      projects.push({ id, name: id, path: projectPath });
+      continue;
+    }
+
+    try {
+      for (const entry of fs.readdirSync(projectPath, { withFileTypes: true }) as DirectoryEntry[]) {
+        if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
+        const nestedProjectPath = path.join(projectPath, entry.name);
+        if (seen.has(nestedProjectPath) || isOrchestraXDirectory(nestedProjectPath)) continue;
+        if (isProjectDirectory(nestedProjectPath)) {
+          seen.add(nestedProjectPath);
+          projects.push({ id: entry.name, name: entry.name, path: nestedProjectPath });
+        }
+      }
+    } catch {
+      // Ignore unreadable workspace folders.
+    }
   }
-  return { root: resolved, orchestraxRoot, projects };
+
+  return { root: resolved, orchestraxRoot, projects, folderRoots: located.folderRoots, workspaceFile: located.workspaceFile };
 }
 
 function help(): void {
   console.log(`
-Neo OrchestraX v0.14.3
+Neo OrchestraX v0.14.4
 
 Workspace:
   neo workspace status
@@ -136,8 +159,13 @@ const workspace = discoverWorkspace(process.cwd());
 const packRoot = path.join(workspace.orchestraxRoot, "packs");
 
 if (command === "status" || args.join(" ") === "workspace status") {
-  console.log("Neo OrchestraX v0.14.3");
+  console.log("Neo OrchestraX v0.14.4");
   console.log(`Workspace: ${workspace.root}`);
+  if (workspace.workspaceFile) console.log(`Workspace file: ${workspace.workspaceFile}`);
+  if (workspace.folderRoots?.length) {
+    console.log(`Workspace folders: ${workspace.folderRoots.length}`);
+    workspace.folderRoots.forEach(folder => console.log(`  * ${folder}`));
+  }
   console.log(`Projects: ${workspace.projects.length}`);
   workspace.projects.forEach(p => console.log(`  - ${p.name} (${p.id})`));
 } else if (args.join(" ") === "project list") {
