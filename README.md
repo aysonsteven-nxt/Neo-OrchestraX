@@ -1,6 +1,6 @@
 # Neo OrchestraX
 
-**Version 0.16.1**
+**Version 0.16.3**
 
 Neo OrchestraX is a local-first, provider-neutral AI development orchestration toolkit.
 
@@ -85,7 +85,7 @@ neo pack install android-kotlin-dev MoneyMap
 
 The effective project environment is resolved from the OrchestraX installation, workspace scope, and project scope.
 
-## AI Commands — PRIMARY where supported
+## AI Commands — compatibility only
 
 Copilot already exposes OrchestraX commands through its provider plugin:
 

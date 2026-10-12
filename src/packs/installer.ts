@@ -37,7 +37,7 @@ export function installProjectPack(sourcePackPath: string, project: Project, wor
   if (!validation.valid || !validation.metadata) return { ok: false, message: `Pack validation failed: ${validation.errors.join("; ")}` };
   if (!isHubPack(validation.metadata.name)) return installPack(sourcePackPath, project.path, availablePackRoots);
 
-  ensureProjectHub(workspaceRoot, project, workspaceFile);
+  const hubManifest = ensureProjectHub(workspaceRoot, project, workspaceFile);
   const hubPacks = projectHubPacksPath(workspaceRoot, project);
   const hubRoot = path.dirname(hubPacks);
   const graph = resolvePackGraph(sourcePackPath, [...availablePackRoots, hubPacks]);
@@ -80,7 +80,12 @@ export function installProjectPack(sourcePackPath: string, project: Project, wor
     }
   }
 
-  return { ok: true, message: `Installed ${validation.metadata.name}@${validation.metadata.version} to Project Hub ${path.basename(hubRoot)}${installed.length > 1 ? ` with ${installed.length - 1} dependency pack(s)` : ""}`, installed };
+  const registrationNote = hubManifest.workspaceRegistration === "added"
+    ? " and registered it in the active VS Code workspace"
+    : hubManifest.workspaceRegistration === "already-registered"
+      ? " (already registered in the workspace)"
+      : " (workspace registration unavailable)";
+  return { ok: true, message: `Installed ${validation.metadata.name}@${validation.metadata.version} to Project Hub ${path.basename(hubRoot)}${registrationNote}${installed.length > 1 ? ` with ${installed.length - 1} dependency pack(s)` : ""}`, installed };
 }
 
 export function installPack(sourcePackPath: string, projectPath: string, availablePackRoots: string[] = []): InstallResult {
