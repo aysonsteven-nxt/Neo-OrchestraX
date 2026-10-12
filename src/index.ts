@@ -49,7 +49,14 @@ export function discoverWorkspace(root: string, installationRoot: string = path.
   const orchestraxRoot = located.orchestraxRoot;
   const configured = readWorkspaceConfig(resolved);
   const configuredProjectsRoot = configured ? path.join(resolved, configured.projectsDirectory) : undefined;
-  const candidateRoots = [...(located.folderRoots ?? []), ...(configuredProjectsRoot ? [configuredProjectsRoot] : []), resolved].filter((value, index, all) => all.indexOf(value) === index);
+  // Include the invocation directory as a project candidate. This matters for
+  // nested project layouts (for example workspace/projects/product/fe/app)
+  // where the actual repository root is deeper than the configured projects
+  // directory. It also lets explicit CLI targets resolve the project from the
+  // current working directory without requiring the project to be a direct
+  // child of the workspace.
+  const invocationRoot = path.resolve(root);
+  const candidateRoots = [...(located.folderRoots ?? []), ...(configuredProjectsRoot ? [configuredProjectsRoot] : []), invocationRoot, resolved].filter((value, index, all) => all.indexOf(value) === index);
   const projects: Project[] = [];
   const seen = new Set<string>();
 

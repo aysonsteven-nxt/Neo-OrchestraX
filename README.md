@@ -1,6 +1,6 @@
 # Neo OrchestraX
 
-**Version 0.15.0**
+**Version 0.16.1**
 
 Neo OrchestraX is a local-first, provider-neutral AI development orchestration toolkit.
 
@@ -35,7 +35,7 @@ OrchestraX installation
 
 The OrchestraX installation is the toolkit/runtime. It does not need to live inside a workspace.
 
-A workspace is an optional scope for related projects, shared configuration, documentation, and cross-project context.
+A workspace is an optional logical scope for related projects, shared configuration, documentation, and cross-project context. Projects may live in different physical directories; a VS Code multi-root `.code-workspace` can define those folders without moving them under the workspace directory.
 
 A standalone project can use OrchestraX without a workspace.
 

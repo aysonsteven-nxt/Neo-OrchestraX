@@ -76,8 +76,20 @@ export function locateOrchestraX(start: string, installationRoot?: string): Loca
     const folderRoots = getCodeWorkspaceRoots(codeWorkspace);
     const workspaceMarker = nearestMarker(start, isWorkspaceRoot) ?? (isWorkspaceRoot(workspaceDir) ? workspaceDir : undefined);
     if (workspaceMarker) return { workspaceRoot: workspaceMarker, orchestraxRoot: install, installationRoot: install, folderRoots, workspaceFile: codeWorkspace, configPath: workspaceConfigPath(workspaceMarker), initialized: true, scope: "workspace" };
-    const legacy = folderRoots.find(isOrchestraXDirectory) ?? fs.readdirSync(workspaceDir, { withFileTypes: true }).find(e => e.isDirectory() && isOrchestraXDirectory(path.join(workspaceDir, e.name)));
-    if (legacy) return { workspaceRoot: workspaceDir, orchestraxRoot: install, installationRoot: install, folderRoots, workspaceFile: codeWorkspace, initialized: false, scope: "legacy" };
+    // A .code-workspace file is itself a valid logical workspace boundary.
+    // The workspace does not need an OrchestraX-generated .orchestrax marker
+    // before its folders can be discovered or used. `initialized` only tells
+    // us whether OrchestraX metadata has been initialized in that workspace.
+    return {
+      workspaceRoot: workspaceDir,
+      orchestraxRoot: install,
+      installationRoot: install,
+      folderRoots,
+      workspaceFile: codeWorkspace,
+      configPath: workspaceConfigPath(workspaceDir),
+      initialized: isWorkspaceRoot(workspaceDir),
+      scope: "workspace"
+    };
   }
 
   const workspace = nearestMarker(start, isWorkspaceRoot);

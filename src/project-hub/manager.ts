@@ -4,9 +4,14 @@ import type { Project } from "../workspace/types.js";
 import type { ProjectHubManifest } from "./types.js";
 
 export function projectHubPath(workspaceRoot: string, project: Pick<Project, "path" | "id">): string {
-  const base = fs.existsSync(path.join(workspaceRoot, ".orchestrax", "workspace.json"))
-    ? workspaceRoot
-    : path.dirname(project.path);
+  // A Project Hub belongs to the resolved workspace scope, not to the
+  // project's physical parent directory. A workspace may be a multi-root
+  // logical workspace whose projects live in completely different locations.
+  // For a standalone project (workspaceRoot === project.path), keep the hub
+  // beside the project as the local fallback.
+  const workspaceResolved = path.resolve(workspaceRoot);
+  const projectResolved = path.resolve(project.path);
+  const base = workspaceResolved !== projectResolved ? workspaceResolved : path.dirname(projectResolved);
   return path.join(base, `${project.id}-docs`);
 }
 
