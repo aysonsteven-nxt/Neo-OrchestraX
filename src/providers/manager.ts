@@ -10,6 +10,7 @@ import { resolveInstructions } from "../instructions/resolver.js";
 import { resolveAgents } from "../agents/resolver.js";
 import { resolveSkills, resolveSkillsForAgent } from "../skills/resolver.js";
 import type { ProviderArtifact, ProviderContext, ProviderId, ProviderCommandProjection } from "./types.js";
+import { locateOrchestraX } from "../workspace/discovery.js";
 
 export interface ProviderSyncResult {
   provider: ProviderId;
@@ -53,8 +54,9 @@ function writeArtifact(projectPath: string, artifact: ProviderArtifact): "writte
 export function syncProvider(project: { id: string; name: string; path: string }, providerId: string): ProviderSyncResult {
   const provider = getProvider(providerId);
   if (!provider) throw new Error(`Unknown provider: ${providerId}`);
-  const workspaceRoot = path.resolve(project.path, "..");
-  const orchestraxRoot = path.join(workspaceRoot, "neo-orchestrax");
+  const located = locateOrchestraX(project.path);
+  const workspaceRoot = located.workspaceRoot;
+  const orchestraxRoot = located.orchestraxRoot;
   const context = buildContext(project, workspaceRoot, orchestraxRoot);
   const result: ProviderSyncResult = { provider: provider.id, artifacts: [], skipped: [] };
   for (const artifact of provider.generate(project, context)) {
@@ -75,7 +77,7 @@ export function listProviders() {
 export function projectProviderCommands(projectPath: string, providerId: string): ProviderCommandProjection[] {
   const provider = getProvider(providerId);
   if (!provider) throw new Error(`Unknown provider: ${providerId}`);
-  const orchestraxRoot = path.resolve(projectPath, "..", "neo-orchestrax");
+  const orchestraxRoot = locateOrchestraX(projectPath).orchestraxRoot;
   const commands = loadCommands(path.join(orchestraxRoot, "commands"));
   return provider.projectCommands(commands);
 }
@@ -86,7 +88,7 @@ function writeManifest(projectPath: string, commandsRoot: string): void {
   const commands = loadCommands(commandsRoot);
   fs.writeFileSync(path.join(dir, "manifest.json"), JSON.stringify({
     generatedBy: "neo-orchestrax",
-    version: "0.14.0",
+    version: "0.14.1",
     providers: providers.map(p => ({ id: p.id, capabilities: p.capabilities })),
     aiCommands: commands.map(command => ({ id: command.id, version: command.version, description: command.description, usage: command.usage })),
     updatedAt: new Date().toISOString()

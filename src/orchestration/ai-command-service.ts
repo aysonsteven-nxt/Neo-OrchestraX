@@ -30,11 +30,11 @@ function joinLines(lines: string[]): string {
 }
 
 function packRoot(workspace: Workspace): string {
-  return path.join(workspace.root, "neo-orchestrax", "packs");
+  return path.join(workspace.orchestraxRoot, "packs");
 }
 
 function orchestraxRoot(workspace: Workspace): string {
-  return path.join(workspace.root, "neo-orchestrax");
+  return workspace.orchestraxRoot;
 }
 
 export function executeAiCommand(input: string, workspace: Workspace): AiCommandServiceResult {

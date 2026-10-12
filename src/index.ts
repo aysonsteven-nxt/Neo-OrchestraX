@@ -25,6 +25,7 @@ import { findSkill, resolveSkills, resolveAllSkills } from "./skills/resolver.js
 import { validateSkillDirectory } from "./skills/registry.js";
 
 import type { Project, Workspace } from "./workspace/types.js";
+import { isOrchestraXDirectory, locateOrchestraX } from "./workspace/discovery.js";
 export type { Project, Workspace } from "./workspace/types.js";
 
 interface DirectoryEntry {
@@ -39,20 +40,25 @@ function isProject(dir: string): boolean {
     || entries.some(e => e.isDirectory() && [".git",".devkit",".orchestrax"].includes(e.name));
 }
 
+
+
 export function discoverWorkspace(root: string): Workspace {
-  const resolved = path.resolve(root);
+  const located = locateOrchestraX(root);
+  const resolved = located.workspaceRoot;
+  const orchestraxRoot = located.orchestraxRoot;
   const projects: Project[] = [];
   for (const entry of fs.readdirSync(resolved, { withFileTypes: true }) as DirectoryEntry[]) {
-    if (!entry.isDirectory() || entry.name.startsWith(".") || entry.name === "neo-orchestrax") continue;
+    if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
     const projectPath = path.join(resolved, entry.name);
+    if (isOrchestraXDirectory(projectPath)) continue;
     if (isProject(projectPath)) projects.push({ id: entry.name, name: entry.name, path: projectPath });
   }
-  return { root: resolved, projects };
+  return { root: resolved, orchestraxRoot, projects };
 }
 
 function help(): void {
   console.log(`
-Neo OrchestraX v0.14.0
+Neo OrchestraX v0.14.1
 
 Workspace:
   neo workspace status
@@ -134,10 +140,10 @@ const command = args[0];
 if (!command || command === "help" || command === "--help") { help(); process.exit(0); }
 
 const workspace = discoverWorkspace(process.cwd());
-const packRoot = path.join(workspace.root, "neo-orchestrax", "packs");
+const packRoot = path.join(workspace.orchestraxRoot, "packs");
 
 if (command === "status" || args.join(" ") === "workspace status") {
-  console.log("Neo OrchestraX v0.14.0");
+  console.log("Neo OrchestraX v0.14.1");
   console.log(`Workspace: ${workspace.root}`);
   console.log(`Projects: ${workspace.projects.length}`);
   workspace.projects.forEach(p => console.log(`  - ${p.name} (${p.id})`));
@@ -277,7 +283,7 @@ if (command === "status" || args.join(" ") === "workspace status") {
   } else if (sub === "compose") {
     const packName = args[2]; const project = workspace.projects.find(p => p.name.toLowerCase() === (args[3] ?? "").toLowerCase());
     if (!packName || !project) { console.error("Usage: neo pack compose <pack> <project>"); process.exit(1); }
-    const composition = composePack(project, packName, path.join(workspace.root, "neo-orchestrax"), workspace.root);
+    const composition = composePack(project, packName, workspace.orchestraxRoot, workspace.root);
     if (!composition) { console.error(`Pack not found or invalid: ${packName}`); process.exit(1); }
     console.log(`Pack Composition: ${packName} → ${project.name}`);
     console.log("\nResolved packs:"); composition.order.forEach(p => console.log(`- ${p.pack.name}@${p.pack.version}`));
@@ -297,7 +303,7 @@ if (command === "status" || args.join(" ") === "workspace status") {
 
   const project = workspace.projects.find(p => p.name.toLowerCase() === (args[2] ?? "").toLowerCase());
   if (!project) { console.error("Project not found."); process.exit(1); }
-  const orchestraxRoot = path.join(workspace.root, "neo-orchestrax");
+  const orchestraxRoot = workspace.orchestraxRoot;
   const resolution = resolveInstructions(orchestraxRoot, workspace.root, project);
 
   if (sub === "list" || sub === "effective") {
@@ -326,7 +332,7 @@ if (command === "status" || args.join(" ") === "workspace status") {
   const sub=args[1];
   if(sub==="validate"){const target=path.resolve(args[2]??"");const errors=validateAgentDirectory(target);console.log(errors.length?`Invalid: ${errors.join("; ")}`:`Valid agent: ${target}`);process.exit(errors.length?1:0);}
   const project=workspace.projects.find(p=>p.name.toLowerCase()===(args[2]??"").toLowerCase()); if(!project){console.error("Project not found.");process.exit(1);}
-  const resolution=resolveAgents(path.join(workspace.root,"neo-orchestrax"),workspace.root,project);
+  const resolution=resolveAgents(workspace.orchestraxRoot,workspace.root,project);
   if(sub==="list"||sub==="effective"){console.log(`Applicable OrchestraX Agents: ${project.name}`);resolution.agents.forEach(a=>console.log(`${a.id}@${a.version} | ${a.source} | ${a.role} | ${a.capabilities.join(", ")}`));if(resolution.conflicts.length){console.log("\nResolution notes:");resolution.conflicts.forEach(c=>console.log(`  ! ${c}`));}}
   else if(sub==="show"){const id=args[3];if(!id){console.error("Usage: neo agent show <project> <agent-id>");process.exit(1);}const agent=findAgent(resolution,id);if(!agent){console.error(`Agent not found: ${id}`);process.exit(1);}console.log(`# ${agent.id}`);console.log(`Version: ${agent.version}`);console.log(`Source: ${agent.source}`);console.log(`Role: ${agent.role}`);console.log(`Capabilities: ${agent.capabilities.join(", ")||"none"}`);console.log("\nInstruction dependencies:");agent.resolvedInstructions.forEach(d=>console.log(`- ${d.id} @ ${d.version} | ${d.required?"required":"optional"} | ${d.available?`available (${d.source})`:"missing"}`));console.log("\nSkill dependencies:");agent.resolvedSkills.forEach(d=>console.log(`- ${d.id} @ ${d.version} | ${d.required?"required":"optional"} | ${d.available?`available (${d.source})`:"missing"}`));console.log(`\n${agent.content}`);}
   else {console.error("Unknown agent command.");process.exit(1);}
@@ -334,9 +340,9 @@ if (command === "status" || args.join(" ") === "workspace status") {
   const sub=args[1];
   if(sub==="validate"){const target=path.resolve(args[2]??"");const errors=validateSkillDirectory(target);console.log(errors.length?`Invalid: ${errors.join("; ")}`:`Valid skill: ${target}`);process.exit(errors.length?1:0);}
   const project=workspace.projects.find(p=>p.name.toLowerCase()===(args[2]??"").toLowerCase()); if(!project){console.error("Project not found.");process.exit(1);}
-  const resolution=resolveSkills(path.join(workspace.root,"neo-orchestrax"),workspace.root,project,args[3]);
+  const resolution=resolveSkills(workspace.orchestraxRoot,workspace.root,project,args[3]);
   if(sub==="list"||sub==="effective"){console.log(`Effective OrchestraX Skills: ${project.name}${args[3]?` [${args[3]}]`:""}`);resolution.skills.forEach(s=>console.log(`${s.id}@${s.version} | ${s.source} | ${s.category} | ${s.capabilities.join(", ")}`));if(resolution.conflicts.length){console.log("\nResolution notes:");resolution.conflicts.forEach(c=>console.log(`  ! ${c}`));}}
-  else if(sub==="show"){const id=args[3];if(!id){console.error("Usage: neo skill show <project> <skill-id>");process.exit(1);}const skill=findSkill(resolveAllSkills(path.join(workspace.root,"neo-orchestrax"),workspace.root,project),id);if(!skill){console.error(`Skill not found: ${id}`);process.exit(1);}console.log(`# ${skill.id}`);console.log(`Version: ${skill.version}`);console.log(`Source: ${skill.source}`);console.log(`Category: ${skill.category}`);console.log(`Mapped agents: ${skill.appliesToAgents.join(", ")||"all"}`);console.log(`\n${skill.content}`);}
+  else if(sub==="show"){const id=args[3];if(!id){console.error("Usage: neo skill show <project> <skill-id>");process.exit(1);}const skill=findSkill(resolveAllSkills(workspace.orchestraxRoot,workspace.root,project),id);if(!skill){console.error(`Skill not found: ${id}`);process.exit(1);}console.log(`# ${skill.id}`);console.log(`Version: ${skill.version}`);console.log(`Source: ${skill.source}`);console.log(`Category: ${skill.category}`);console.log(`Mapped agents: ${skill.appliesToAgents.join(", ")||"all"}`);console.log(`\n${skill.content}`);}
   else {console.error("Unknown skill command.");process.exit(1);}
 } else if (command === "syntra") {
   const sub = args[1];

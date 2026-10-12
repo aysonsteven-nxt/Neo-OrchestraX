@@ -1,6 +1,6 @@
 # Neo OrchestraX
 
-**Version 0.14.0**
+**Version 0.14.1**
 
 Neo OrchestraX is a workspace-first, provider-neutral AI development orchestration layer.
 
@@ -76,7 +76,10 @@ neo-orchestrax/
 
 Provider adapters determine how those canonical capabilities are exposed through a specific AI provider. The core does not depend on Copilot, Gemini, Claude Code, Cursor, or any other single provider.
 
-## V0.14.0
+## V0.14.1
+
+This bug-fix release improves workspace and OrchestraX root discovery so versioned release folders and invocation from inside the OrchestraX directory work correctly.
+
 
 V0.14 introduces:
 

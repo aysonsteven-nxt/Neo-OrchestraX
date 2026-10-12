@@ -6,5 +6,6 @@ export interface Project {
 
 export interface Workspace {
   root: string;
+  orchestraxRoot: string;
   projects: Project[];
 }
