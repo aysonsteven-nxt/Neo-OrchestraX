@@ -30,6 +30,7 @@ import type { Project, Workspace } from "./workspace/types.js";
 import { isOrchestraXDirectory, isProjectDirectory, locateOrchestraX } from "./workspace/discovery.js";
 import { initWorkspace, initProject, workspaceConfigPath, projectConfigPath, readWorkspaceConfig } from "./workspace/config.js";
 import { ensureProjectHub, listHubInstalled, projectHubPath } from "./project-hub/manager.js";
+import { installProjectBoard, launchProjectBoard, updateProjectBoard, validateProjectBoard, getProjectBoardPath } from "./project-board.js";
 export type { Project, Workspace } from "./workspace/types.js";
 
 const installationRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -100,6 +101,10 @@ Workspace:
   neo project init [path]
   neo hub status <project>
   neo hub path <project>
+  neo board install <project>
+  neo board status <project>
+  neo board update <project>
+  neo board launch <project>
 
 Packs:
   neo pack list
@@ -215,7 +220,38 @@ const availablePackRoots = [packRoot, workspacePackRoot].filter((value, index, a
 function projectHubPackRoot(project: Project): string { return path.join(projectHubPath(workspace.root, project), "packs"); }
 function projectAvailablePackRoots(project: Project): string[] { return [...availablePackRoots, path.join(project.path, ".orchestrax", "packs"), projectHubPackRoot(project)].filter((value, index, all) => all.indexOf(value) === index); }
 
-if (command === "workspace" && args[1] === "init") {
+if (command === "board") {
+  const sub = args[1];
+  const project = workspace.projects.find(p => p.name.toLowerCase() === (args[2] ?? "").toLowerCase());
+  if (!project) { console.error("Project not found."); process.exit(1); }
+  if (!["install", "status", "update", "launch"].includes(sub ?? "")) {
+    console.error("Usage: neo board install|status|update|launch <project>"); process.exit(1);
+  }
+  if (sub === "install") {
+    const result = installProjectBoard(workspace.root, project);
+    console.log(result.message);
+    process.exit(result.valid ? 0 : 1);
+  }
+  if (sub === "status") {
+    const result = validateProjectBoard(workspace.root, project);
+    console.log(`Neo Project Board: ${project.name}`);
+    console.log(`Path: ${getProjectBoardPath(workspace.root, project)}`);
+    console.log(`Installed: ${result.installed ? "yes" : "no"}`);
+    console.log(`Compatible: ${result.valid ? "yes" : "no"}`);
+    if (result.version) console.log(`Version: ${result.version}`);
+    if (result.contract) console.log(`Contract: ${result.contract}`);
+    console.log(`Message: ${result.message}`);
+    process.exit(result.valid ? 0 : 1);
+  }
+  if (sub === "update") {
+    const result = updateProjectBoard(workspace.root, project);
+    console.log(result.message);
+    process.exit(result.valid ? 0 : 1);
+  }
+  const result = launchProjectBoard(workspace.root, project);
+  console.error(result.message);
+  process.exit(result.ok ? 0 : 1);
+} else if (command === "workspace" && args[1] === "init") {
   const target = path.resolve(args[2] ?? process.cwd());
   if (fs.existsSync(workspaceConfigPath(target))) { console.error(`Workspace already initialized: ${target}`); process.exit(1); }
   initWorkspace(target);
@@ -363,8 +399,20 @@ if (command === "workspace" && args[1] === "init") {
     const result = sub === "install"
       ? (workspaceScope ? installWorkspacePack(path.join(packRoot, pack), workspace.root, availablePackRoots) : installProjectPack(path.join(packRoot, pack), project!, workspace.root, projectAvailablePackRoots(project!), workspace.workspaceFile))
       : (workspaceScope ? removeWorkspacePack(workspace.root, pack) : removeProjectPack(project!, workspace.root, pack));
-    console.log(result.message);
+    if (sub === "install" && result.ok && !workspaceScope && project && pack?.toLowerCase() === "project-manager") {
+      const board = installProjectBoard(workspace.root, project);
+      if (!board.valid) {
+        console.error(result.message);
+        console.error(`Project Manager installation completed, but Neo Project Board provisioning failed: ${board.message}`);
+        process.exit(1);
+      }
+      console.log(result.message);
+      console.log(board.message);
+    } else {
+      console.log(result.message);
+    }
     process.exit(result.ok ? 0 : 1);
+
   } else if (sub === "validate") {
     const target = path.join(packRoot, args[2] ?? "");
     const result = validatePack(target, availablePackRoots);

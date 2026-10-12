@@ -130,3 +130,8 @@ neo command "/package-selector for MoneyMap"
 - **Context / Syntra** — persistent knowledge and project/workspace intelligence.
 
 Syntra is not a user-facing command registry and is not a replacement for packs, agents, skills, or instructions.
+
+
+## V0.17.0
+
+V0.17 provisions the separate Neo Project Board repository inside `<project>-docs/neo-project-board` when the Project Manager pack is installed.
