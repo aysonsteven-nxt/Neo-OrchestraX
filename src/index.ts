@@ -10,6 +10,8 @@ import { createEntry, listSyntra, searchSyntra, changeSyntraStatus } from "./syn
 import { initSyntra } from "./syntra/store.js";
 import { resolveContext } from "./context/resolver.js";
 import { formatContext } from "./context/formatter.js";
+import { createTask, listTasks, getTask, changeTaskStatus } from "./tasks/manager.js";
+import { resolveTaskContext } from "./tasks/context.js";
 
 export interface Project { id: string; name: string; path: string; }
 export interface Workspace { root: string; projects: Project[]; }
@@ -48,6 +50,11 @@ Packs:
   neo analyze <project>
   neo pack recommend <project>
   neo context <project> [query]
+  neo task start <project> "<title>" "<objective>"
+  neo task list <project>
+  neo task show <project> <task-id>
+  neo task status <project> <task-id> <status>
+  neo task context <project> <task-id>
 
 Syntra diagnostics:
   neo syntra init <project>
@@ -82,6 +89,15 @@ if (command === "status" || args.join(" ") === "workspace status") {
 
   const query = args.slice(2).join(" ").trim() || undefined;
   console.log(formatContext(resolveContext(project, query)));
+} else if (command === "task") {
+  const sub=args[1], project=workspace.projects.find(p=>p.name.toLowerCase()===(args[2]??"").toLowerCase());
+  if(!project){console.error("Project not found.");process.exit(1);}
+  if(sub==="start"){const title=args[3],objective=args[4];if(!title||!objective){console.error('Usage: neo task start <project> "<title>" "<objective>"');process.exit(1)}const t=createTask(project.path,project.id,title,objective);console.log(`Created task ${t.id}`)}
+  else if(sub==="list"){listTasks(project.path).forEach(t=>console.log(`${t.id} | ${t.status} | ${t.title}`))}
+  else if(sub==="show"){const t=getTask(project.path,args[3]);if(!t){console.error("Task not found.");process.exit(1)}console.log(JSON.stringify(t,null,2))}
+  else if(sub==="status"){const t=changeTaskStatus(project.path,args[3],args[4] as any);if(!t){console.error("Task not found.");process.exit(1)}console.log(`Updated ${t.id} → ${t.status}`)}
+  else if(sub==="context"){const t=getTask(project.path,args[3]);if(!t){console.error("Task not found.");process.exit(1)}console.log(formatContext(resolveTaskContext(project,t).context))}
+  else {console.error("Unknown task command.");process.exit(1)}
 } else if (command === "analyze" || (command === "pack" && args[1] === "recommend")) {
   const projectName = command === "analyze" ? args[1] : args[2];
   const project = workspace.projects.find(p => p.name.toLowerCase() === (projectName ?? "").toLowerCase());

@@ -1,38 +1,16 @@
 # Neo OrchestraX
 
-**Version 0.6.0**
+**Version 0.7.0**
 
-Neo OrchestraX is an AI development orchestration platform for workspace-based AI-assisted software development.
+V0.7 adds the Task / Workflow foundation.
 
-## V0.6.0 — Context Resolver
-
-V0.6 adds focused context resolution.
-
-Instead of giving an agent the entire project knowledge store, OrchestraX can resolve relevant context from:
-
-- Project Profile
-- Syntra
-- optional task/query text
-
-Example:
+Tasks track objectives, status, relevant packs, context, completed/in-progress work, questions, problems, and next action.
 
 ```text
-@context
+@task start "Implement transaction history"
+@task start "Implement transaction history" for MoneyMap
 ```
 
-or:
+Task context is resolved through the Context Resolver using task information, Project Profile, and Syntra.
 
-```text
-@context for MoneyMap
-```
-
-Diagnostic CLI:
-
-```text
-neo context MoneyMap
-neo context MoneyMap authentication
-```
-
-Syntra remains an internal subsystem. There is no `@syntra` command.
-
-The existing `neo-devkit` prototype remains untouched.
+Syntra remains an internal subsystem and is not a command namespace.
