@@ -19,10 +19,10 @@ export function parseCommand(input: string): ParsedCommand {
 
   // Project targeting uses the canonical:
   // @command ... for <project>
-  const projectMatch = remainder.match(/\s+for\s+(.+)$/i);
+  const projectMatch = remainder.match(/(?:^|\s+)for\s+(.+)$/i);
   if (projectMatch) {
     project = projectMatch[1].trim();
-    remainder = remainder.slice(0, projectMatch.index).trim();
+    remainder = remainder.slice(0, projectMatch.index ?? 0).trim();
   }
 
   const args = remainder

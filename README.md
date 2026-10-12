@@ -1,16 +1,41 @@
 # Neo OrchestraX
 
-**Version 0.8.0**
+**Version 0.9.0**
 
-V0.8 adds Handoff / Resume continuity.
+V0.9 establishes provider adapters and provider-specific project artifacts while keeping OrchestraX canonical context provider-neutral.
 
-Handoff captures transferable current work state from the local OrchestraX task state. Resume restores the latest saved handoff for a project. Handoff is distinct from Syntra: Syntra stores persistent project intelligence, while Handoff stores current session/work continuity.
+Supported providers:
+- GitHub Copilot
+- Gemini / Antigravity
+- Claude Code
+- Cursor
 
 ```text
-@handoff
-@handoff for MoneyMap
-@resume
-@resume for MoneyMap
+Project Intelligence + Syntra + Packs + Handoff
+                    |
+                    v
+             Provider Adapter
+              /  |  |  \
+             v   v  v   v
+         Copilot Gemini Claude Cursor
 ```
 
-OrchestraX does not inspect private provider conversations. Provider, agent, session, active-file, recent-change, decision, and constraint metadata are explicit handoff fields and are only populated when supplied by an integration or caller.
+The user talks to **Neo OrchestraX**. Syntra remains the internal persistent project-intelligence layer; Handoff remains current session/work continuity.
+
+Provider synchronization:
+
+```text
+@provider-sync
+@provider-sync for MoneyMap
+@provider-sync copilot for MoneyMap
+```
+
+CLI diagnostics:
+
+```text
+neo provider list
+neo provider sync MoneyMap
+neo provider sync MoneyMap copilot
+```
+
+Generated provider artifacts are managed by OrchestraX. Existing unmanaged files are never overwritten; synchronization reports collisions as skipped.

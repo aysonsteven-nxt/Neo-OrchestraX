@@ -14,3 +14,12 @@ AI-facing commands are handled by Neo OrchestraX:
 ```
 
 Syntra is internal and has no `@syntra` command.
+
+
+Provider integration:
+
+```text
+@provider-sync
+@provider-sync for MoneyMap
+@provider-sync copilot for MoneyMap
+```

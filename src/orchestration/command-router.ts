@@ -20,7 +20,8 @@ const supported = new Set([
   "context",
   "task",
   "handoff",
-  "resume"
+  "resume",
+  "provider-sync"
 ]);
 
 export function routeCommand(input: string, projects: Project[]): CommandResult {

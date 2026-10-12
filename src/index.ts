@@ -14,6 +14,7 @@ import { createTask, listTasks, getTask, changeTaskStatus } from "./tasks/manage
 import { resolveTaskContext } from "./tasks/context.js";
 import { createHandoff, getHandoff, getLatestHandoff, listHandoffs } from "./handoff/manager.js";
 import { formatHandoff } from "./handoff/formatter.js";
+import { listProviders, syncProvider, syncAllProviders } from "./providers/manager.js";
 
 export interface Project { id: string; name: string; path: string; }
 export interface Workspace { root: string; projects: Project[]; }
@@ -37,7 +38,7 @@ export function discoverWorkspace(root: string): Workspace {
 
 function help(): void {
   console.log(`
-Neo OrchestraX v0.8.0
+Neo OrchestraX v0.9.0
 
 Workspace:
   neo workspace status
@@ -63,6 +64,10 @@ Packs:
   neo handoff latest <project>
   neo resume <project>
 
+Providers:
+  neo provider list
+  neo provider sync <project> [provider]
+
 Syntra diagnostics:
   neo syntra init <project>
   neo syntra list <project>
@@ -75,6 +80,8 @@ AI-facing commands are routed through Neo OrchestraX:
   @handoff for MoneyMap
   @resume
   @resume for MoneyMap
+  @provider-sync
+  @provider-sync copilot for MoneyMap
 `);
 }
 
@@ -86,7 +93,7 @@ const workspace = discoverWorkspace(process.cwd());
 const packRoot = path.join(workspace.root, "neo-orchestrax", "packs");
 
 if (command === "status" || args.join(" ") === "workspace status") {
-  console.log("Neo OrchestraX v0.8.0");
+  console.log("Neo OrchestraX v0.9.0");
   console.log(`Workspace: ${workspace.root}`);
   console.log(`Projects: ${workspace.projects.length}`);
   workspace.projects.forEach(p => console.log(`  - ${p.name} (${p.id})`));
@@ -143,6 +150,21 @@ if (command === "status" || args.join(" ") === "workspace status") {
   if (!h) { console.error("No handoff found to resume."); process.exit(1); }
   console.log(`Resume: ${project.name}`);
   console.log(formatHandoff(h));
+} else if (command === "provider") {
+  const sub = args[1];
+  if (sub === "list") {
+    listProviders().forEach(p => console.log(`${p.id}\t${p.name}\t${p.description}`));
+  } else if (sub === "sync") {
+    const project = workspace.projects.find(p => p.name.toLowerCase() === (args[2] ?? "").toLowerCase());
+    if (!project) { console.error("Project not found."); process.exit(1); }
+    const provider = args[3];
+    const results = provider ? [syncProvider(project, provider)] : syncAllProviders(project);
+    results.forEach(r => {
+      console.log(`${r.provider}: wrote ${r.artifacts.length}, skipped ${r.skipped.length}`);
+      r.artifacts.forEach(a => console.log(`  + ${a}`));
+      r.skipped.forEach(a => console.log(`  ! ${a} (existing unmanaged file)`));
+    });
+  } else { console.error("Unknown provider command."); process.exit(1); }
 } else if (command === "analyze" || (command === "pack" && args[1] === "recommend")) {
   const projectName = command === "analyze" ? args[1] : args[2];
   const project = workspace.projects.find(p => p.name.toLowerCase() === (projectName ?? "").toLowerCase());
@@ -217,7 +239,16 @@ if (command === "status" || args.join(" ") === "workspace status") {
   }
 
   const project = result.project!;
-  if (result.command.name === "handoff") {
+  if (result.command.name === "provider-sync") {
+    const provider = result.command.args[0];
+    const results = provider ? [syncProvider(project, provider)] : syncAllProviders(project);
+    console.log(`Provider sync: ${project.name}`);
+    results.forEach(r => {
+      console.log(`  ${r.provider}: wrote ${r.artifacts.length}, skipped ${r.skipped.length}`);
+      r.artifacts.forEach(a => console.log(`    + ${a}`));
+      r.skipped.forEach(a => console.log(`    ! ${a} (existing unmanaged file)`));
+    });
+  } else if (result.command.name === "handoff") {
     const tasks = listTasks(project.path);
     const task = tasks.filter(t => ["in-progress", "blocked", "planned"].includes(t.status))
       .sort((a,b) => b.updatedAt.localeCompare(a.updatedAt))[0];
