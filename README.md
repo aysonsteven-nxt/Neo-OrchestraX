@@ -1,6 +1,6 @@
 # Neo OrchestraX
 
-**Version 0.16.3**
+**Version 0.19.0**
 
 Neo OrchestraX is a local-first, provider-neutral AI development orchestration toolkit.
 
@@ -139,3 +139,7 @@ V0.17 provisions the separate Neo Project Board repository inside `<project>-doc
 ## V0.18.0 — AI/Agent Project Collaboration
 
 V0.18.0 makes Project Hub data consumable by AI/Agents without introducing a second data store. Use `neo project context <project>` for a complete structured project context, `neo story context <project> <story-id>` for focused ticket context, and `neo story comment <project> <story-id> <author> "<comment>"` to persist agent/human contributions directly in the User Story JSON.
+
+## V0.19.0 — Agent-to-Project Collaboration
+
+V0.19.0 introduces provider-neutral User Story analysis with `neo story collaborate <project> <story-id> <agent-id>`. Use `--dry-run` to inspect the generated analysis request without launching a process. Execution is opt-in through `.orchestrax/agent-executors.json`, and an executor is blocked unless `readOnlyVerified` is true after independent verification of OS-enforced read-only isolation. See [docs/V0.19.0.md](docs/V0.19.0.md) for configuration, safety boundaries, and test coverage.

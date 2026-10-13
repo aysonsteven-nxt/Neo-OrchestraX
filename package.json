@@ -1,13 +1,14 @@
 {
   "name": "neo-orchestrax",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "private": true,
-  "description": "Neo OrchestraX - AI development orchestration foundation",
+  "description": "Neo OrchestraX - provider-neutral agent orchestration and project collaboration",
   "type": "module",
   "scripts": {
     "build": "tsc && node dist/providers/build-plugin.js",
     "start": "node dist/index.js",
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "test": "tsx --test tests/*.test.ts"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

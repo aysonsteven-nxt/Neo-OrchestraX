@@ -32,6 +32,9 @@ import { initWorkspace, initProject, workspaceConfigPath, projectConfigPath, rea
 import { ensureProjectHub, listHubInstalled, projectHubPath } from "./project-hub/manager.js";
 import { installProjectBoard, launchProjectBoard, updateProjectBoard, validateProjectBoard, getProjectBoardPath } from "./project-board.js";
 import { setProjectContextOrchestraxRoot, buildProjectAiContext, resolveProjectStoryContext, addStoryComment } from "./project-context.js";
+import { prepareStoryCollaboration, collaborateOnStory } from "./agents/execution/story-collaboration.js";
+import { CommandAgentExecutor } from "./agents/execution/command-executor.js";
+import { exampleExecutorConfiguration, executorConfigPath, findExecutor, loadExecutorConfiguration, validateExecutorConfiguration } from "./agents/execution/config.js";
 export type { Project, Workspace } from "./workspace/types.js";
 
 const installationRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -126,6 +129,10 @@ Packs:
   neo project context <project>
   neo story context <project> <story-id>
   neo story comment <project> <story-id> <author> "<comment>"
+  neo story collaborate <project> <story-id> <agent-id> [--executor <id>] [--dry-run]
+  neo executor list
+  neo executor validate
+  neo executor example
   neo task start <project> "<title>" "<objective>"
   neo task list <project>
   neo task show <project> <task-id>
@@ -302,12 +309,41 @@ if (command === "board") {
   const project = workspace.projects.find(p => p.name.toLowerCase() === (args[2] ?? "").toLowerCase());
   if (!project) { console.error("Project not found."); process.exit(1); }
   console.log(JSON.stringify(buildProjectAiContext(workspace.root, project), null, 2));
+} else if (command === "executor") {
+  const action = args[1];
+  if (action === "example") {
+    console.log(JSON.stringify(exampleExecutorConfiguration(), null, 2));
+    console.log(`\nSave and edit this example as: ${executorConfigPath(workspace.root)}`);
+    console.log("Do not set readOnlyVerified=true until OS-enforced read-only isolation has been independently tested.");
+  } else if (action === "list") {
+    try {
+      const configuration = loadExecutorConfiguration(workspace.root);
+      if (!configuration?.executors.length) { console.log("No agent executors configured."); process.exit(0); }
+      console.log(`Agent executors (${executorConfigPath(workspace.root)}):`);
+      for (const executor of configuration.executors) {
+        console.log(`- ${executor.id} | ${executor.kind} | ${executor.readOnlyVerified ? "read-only verified (operator assertion)" : "BLOCKED: read-only isolation not verified"}${configuration.defaultExecutor?.toLowerCase() === executor.id.toLowerCase() ? " | default" : ""}`);
+      }
+    } catch (error) { console.error(error instanceof Error ? error.message : String(error)); process.exit(1); }
+  } else if (action === "validate") {
+    const file = executorConfigPath(workspace.root);
+    if (!fs.existsSync(file)) { console.error(`Executor configuration not found: ${file}`); console.error("Run neo executor example to print a starter configuration."); process.exit(1); }
+    try {
+      const parsed: unknown = JSON.parse(fs.readFileSync(file, "utf8"));
+      const errors = validateExecutorConfiguration(parsed);
+      if (errors.length) { console.error(`Invalid executor configuration:\n${errors.map(error => `- ${error}`).join("\n")}`); process.exit(1); }
+      console.log(`Valid executor configuration: ${file}`);
+      const configuration = loadExecutorConfiguration(workspace.root);
+      for (const executor of configuration?.executors ?? []) if (!executor.readOnlyVerified) console.warn(`! ${executor.id} is not executable until readOnlyVerified is set to true after independent verification.`);
+    } catch (error) { console.error(error instanceof Error ? error.message : String(error)); process.exit(1); }
+  } else {
+    console.error("Usage: neo executor list|validate|example"); process.exit(1);
+  }
 } else if (command === "story") {
   const action = args[1];
-  const project = workspace.projects.find(p => p.name.toLowerCase() === (args[2] ?? "").toLowerCase());
+  const project = workspace.projects.find(p => p.name.toLowerCase() === (args[2] ?? "").toLowerCase() || p.id.toLowerCase() === (args[2] ?? "").toLowerCase());
   if (!project) { console.error("Project not found."); process.exit(1); }
   const storyId = args[3];
-  if (!storyId) { console.error("Usage: neo story context|comment <project> <story-id> ..."); process.exit(1); }
+  if (!storyId) { console.error("Usage: neo story context|comment|collaborate <project> <story-id> ..."); process.exit(1); }
   if (action === "context") {
     const context = resolveProjectStoryContext(workspace.root, project, storyId);
     if (!context) { console.error("User Story not found."); process.exit(1); }
@@ -319,6 +355,56 @@ if (command === "board") {
     const comment = addStoryComment(workspace.root, project, storyId, author, content);
     if (!comment) { console.error("User Story not found."); process.exit(1); }
     console.log(`Added comment ${comment.id} to ${storyId}.`);
+  } else if (action === "collaborate") {
+    const agentId = args[4];
+    const options = args.slice(5);
+    let dryRun = false;
+    let executorId: string | undefined;
+    let invalidOption: string | undefined;
+    for (let index = 0; index < options.length; index++) {
+      if (options[index] === "--dry-run") {
+        if (dryRun) invalidOption = "--dry-run was supplied more than once";
+        dryRun = true;
+      } else if (options[index] === "--executor") {
+        if (executorId || !options[index + 1] || options[index + 1].startsWith("--")) invalidOption = "--executor requires exactly one executor id";
+        else executorId = options[++index];
+      } else {
+        invalidOption = `Unknown option: ${options[index]}`;
+      }
+    }
+    if (!agentId || invalidOption) {
+      console.error(invalidOption ?? "Usage: neo story collaborate <project> <story-id> <agent-id> [--executor <id>] [--dry-run]"); process.exit(1);
+    }
+    try {
+      if (dryRun) {
+        const prepared = prepareStoryCollaboration(workspace, project, storyId, agentId);
+        console.log(JSON.stringify({ schema: "neo-orchestrax/story-analysis-preview@1", payload: prepared.payload, prompt: prepared.prompt }, null, 2));
+        console.log("\nDry run only: no executor was started and no Project Hub files were changed.");
+        process.exit(0);
+      }
+      const configuration = loadExecutorConfiguration(workspace.root);
+      if (!configuration) {
+        console.error(`No agent executor configuration found: ${executorConfigPath(workspace.root)}`);
+        console.error("Run neo executor example, configure a CLI with independently verified OS-enforced read-only isolation, then run neo executor validate.");
+        process.exit(1);
+      }
+      const definition = findExecutor(configuration, executorId);
+      if (!definition) {
+        console.error(executorId ? `Executor not found: ${executorId}` : "No defaultExecutor is configured. Pass --executor <id> or configure defaultExecutor.");
+        process.exit(1);
+      }
+      if (!definition.readOnlyVerified) {
+        console.error(`Executor ${definition.id} is blocked because read-only isolation has not been verified. No process was started and no comment was written.`);
+        process.exit(1);
+      }
+      const result = await collaborateOnStory(workspace, project, storyId, agentId, new CommandAgentExecutor(definition));
+      console.log(`Analysis saved to ${storyId} as comment ${result.comment.id}.`);
+      console.log(`Agent: ${result.agentId} | Executor: ${result.executorId}${result.durationMs === undefined ? "" : ` | Duration: ${result.durationMs} ms`}`);
+      console.log("\n" + result.response);
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
   } else { console.error("Unknown story command."); process.exit(1); }
 } else if (command === "context") {
   const projectName = args[1];
